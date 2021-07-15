@@ -1,40 +1,33 @@
 use std::env;
 #[macro_use]
 extern crate smart_default;
+use git2::{Repository, Tree};
 use iced::{
     text_input, Application, Clipboard, Column, Command, Container, Element, HorizontalAlignment,
     Length, Settings, Text, TextInput,
 };
-// use git2::{Repository};
+use std::fmt;
 
 pub fn main() -> iced::Result {
     GitPlay::run(Settings::default())
 }
 
-#[derive(Debug)]
 enum GitPlay {
     RepositoryNone(RepositoryNoneState),
-    RepositoryLoading(RepositoryLoadingState),
+    RepositoryLoading(RepositoryNoneState),
     RepositoryReady(RepositoryReadyState),
     RepositoryUnloading,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 struct RepositoryNoneState {
     input_path_to_repository: text_input::State,
     path_to_repository: String,
 }
 
-#[derive(Debug, Default)]
-struct RepositoryLoadingState {
-    path_to_repository: String,
-    total_commit_count: u32,
-    created_at: u32,
-}
-
-#[derive(Clone, Debug, Default)]
 struct RepositoryReadyState {
     path_to_repository: String,
+    repository: Repository,
     current_commit_hash: String,
     play_state: PlayState,
     playback_speed: PlaybackSpeed,
@@ -62,11 +55,12 @@ enum PlaybackSpeed {
     FourTimes,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 enum Message {
     ChangeRepositoryPath(String),
     RepositoryPathSubmitted,
-    RepositoryLoaded(RepositoryReadyState),
+    RepositoryLoaded(Result<RepositoryReadyState, RepositoryError>),
+    RepositoryRewind,
     RepositoryPlay,
     RepositoryPause,
 }
@@ -110,27 +104,26 @@ impl Application for GitPlay {
                     Command::none()
                 }
                 Message::RepositoryPathSubmitted => {
-                    *self = GitPlay::RepositoryLoading(RepositoryLoadingState {
-                        path_to_repository: state.path_to_repository.clone(),
-                        ..RepositoryLoadingState::default()
-                    });
+                    *self = GitPlay::RepositoryLoading(state.clone());
 
-                    Command::none()
+                    Command::perform(
+                        load_repository(state.path_to_repository.clone()),
+                        Message::RepositoryLoaded,
+                    )
                 }
-                _ => {
-                    Command::none()
-                }
+                _ => Command::none(),
             },
 
-            GitPlay::RepositoryLoading(_state) => match message {
-                Message::RepositoryLoaded(state) => {
-                    *self = GitPlay::RepositoryReady(state);
+            GitPlay::RepositoryLoading(state) => match message {
+                Message::RepositoryLoaded(Ok(new_state)) => {
+                    *self = GitPlay::RepositoryReady(*new_state.clone());
 
                     Command::none()
-                },
-                _ => {
-                    Command::none()
                 }
+                Message::RepositoryLoaded(Err(_)) => {
+                    *self = GitPlay::RepositoryNone(*state.clone())
+                }
+                _ => Command::none(),
             },
 
             // Default case handling, temporary code
@@ -206,5 +199,31 @@ impl Application for GitPlay {
             .center_y()
             .into(),
         }
+    }
+}
+
+#[derive(Debug)]
+enum RepositoryError {
+    LoadingError,
+}
+
+fn load_repository(path: String) -> Result<RepositoryReadyState, RepositoryError> {
+    match Repository::open(path) {
+        Ok(repository) => Ok(RepositoryReadyState {
+            path_to_repository: path.clone(),
+            repository,
+            ..RepositoryReadyState::default()
+        }),
+        Err(e) => {
+            println!("Got an error when trying to open repository {}", e);
+
+            Err(RepositoryError::LoadingError)
+        }
+    }
+}
+
+impl fmt::Debug for RepositoryReadyState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.path_to_repository)
     }
 }
