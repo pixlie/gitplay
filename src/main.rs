@@ -25,9 +25,9 @@ struct RepositoryNoneState {
     path_to_repository: String,
 }
 
+#[derive(Default)]
 struct RepositoryReadyState {
     path_to_repository: String,
-    repository: Repository,
     current_commit_hash: String,
     play_state: PlayState,
     playback_speed: PlaybackSpeed,
@@ -55,11 +55,11 @@ enum PlaybackSpeed {
     FourTimes,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum Message {
     ChangeRepositoryPath(String),
     RepositoryPathSubmitted,
-    RepositoryLoaded(Result<RepositoryReadyState, RepositoryError>),
+    RepositoryLoaded(Result<RepositoryActionSuccess, RepositoryActionError>),
     RepositoryRewind,
     RepositoryPlay,
     RepositoryPause,
@@ -70,7 +70,7 @@ impl Application for GitPlay {
     type Message = Message;
     type Flags = ();
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
+    fn new(_flags: ()) -> (Self, Command<Self::Message>) {
         // When this application loads, it loads with a default state
         (
             GitPlay::RepositoryNone(RepositoryNoneState {
@@ -104,10 +104,14 @@ impl Application for GitPlay {
                     Command::none()
                 }
                 Message::RepositoryPathSubmitted => {
+                    // We move our state to loading
                     *self = GitPlay::RepositoryLoading(state.clone());
+                    let mut repository: Repository;
 
+                    // We send a command, which initiates an asynchronous function.
+                    // On completion, Message::RepositoryLoaded will come to us.
                     Command::perform(
-                        load_repository(state.path_to_repository.clone()),
+                        load_repository(state.path_to_repository.clone(), &mut repository),
                         Message::RepositoryLoaded,
                     )
                 }
@@ -115,13 +119,15 @@ impl Application for GitPlay {
             },
 
             GitPlay::RepositoryLoading(state) => match message {
-                Message::RepositoryLoaded(Ok(new_state)) => {
-                    *self = GitPlay::RepositoryReady(*new_state.clone());
+                Message::RepositoryLoaded(Ok(_)) => {
+                    *self = GitPlay::RepositoryReady();
 
                     Command::none()
                 }
                 Message::RepositoryLoaded(Err(_)) => {
-                    *self = GitPlay::RepositoryNone(*state.clone())
+                    *self = GitPlay::RepositoryNone(state.clone());
+
+                    Command::none()
                 }
                 _ => Command::none(),
             },
@@ -203,21 +209,26 @@ impl Application for GitPlay {
 }
 
 #[derive(Debug)]
-enum RepositoryError {
+enum RepositoryActionSuccess {
+    LoadingComplete,
+}
+
+#[derive(Debug)]
+enum RepositoryActionError {
     LoadingError,
 }
 
-fn load_repository(path: String) -> Result<RepositoryReadyState, RepositoryError> {
-    match Repository::open(path) {
-        Ok(repository) => Ok(RepositoryReadyState {
-            path_to_repository: path.clone(),
-            repository,
-            ..RepositoryReadyState::default()
-        }),
+async fn load_repository(path: String, repository: &mut Repository) -> Result<RepositoryActionSuccess, RepositoryActionError> {
+    match Repository::open(path.clone()) {
+        Ok(loaded_repository) => {
+            *repository = loaded_repository;
+
+            Ok(RepositoryActionSuccess::LoadingComplete)
+        },
         Err(e) => {
             println!("Got an error when trying to open repository {}", e);
 
-            Err(RepositoryError::LoadingError)
+            Err(RepositoryActionError::LoadingError)
         }
     }
 }
