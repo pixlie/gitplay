@@ -1,39 +1,67 @@
 use git2::{Commit, ObjectType, Repository, Tree};
 
+/*
+CommitFrame is a single commit in the timeline of the Git repository. Each frame is like a frame
+in a movie that the user can pause at. Each frame has its file structure state once we visit/parse
+that commit.
+ */
 #[derive(Debug)]
-struct GitNode {
+struct CommitFrame {
     git_spec: String,
-    kind: ObjectType,
-    is_visited: bool,
-    branches: Vec<GitNode>,
+    is_visited: CommitFrameState,
 }
 
-fn get_items_of_tree(tree: &Tree) -> Vec<GitNode> {
-    let mut nodes: Vec<GitNode> = Vec::new();
-    for item in tree.iter() {
-        println!("{:?}", item.name().unwrap());
-        nodes.push(GitNode {
-            git_spec: item.id().to_string(),
-            kind: item.kind().unwrap(),
-            is_visited: false,
-            branches: Vec::new(),
-        })
+/*
+We generate each commit as we encounter them by traversing the Git graph (DAG). But for GitPlay
+we are interested in only commits, while tree and blobs are needed only as part of the commit.
+We extract the tree and blobs when we "visit" the commit in question, so we have two states for
+a commit as we encounter or parse (visit) them.
+ */
+#[derive(Debug)]
+enum CommitFrameState {
+    NotVisited,
+    Visited(PopulatedCommit),
+}
+
+/*
+This struct is used to store the parents of this commit and its file structure tree (Git tree).
+ */
+#[derive(Debug)]
+struct PopulatedCommit {
+    parents: Vec<CommitFrame>,
+    file_structure: FileStructure,
+}
+
+#[derive(Debug)]
+struct FileStructure {
+    git_spec: String,
+    blobs: Vec<CommitTreeBlob>,
+}
+
+#[derive(Debug)]
+struct CommitTreeBlob {
+    git_spec: String,
+    label: String,
+    is_directory: bool,
+}
+
+pub fn load_repository(path: &String) -> Repository {
+    match Repository::open(path.clone()) {
+        Ok(repository) => repository,
+        Err(_) => panic!("Could not open repository"),
     }
-    nodes
 }
 
 pub fn walk_repository_from_head(repository: &Repository) {
-    let node = GitNode {
+    let mut node = CommitFrame {
         git_spec: "HEAD".to_string(),
-        kind: ObjectType::Commit,
-        is_visited: false,
-        branches: Vec::new(),
+        is_visited: CommitFrameState::NotVisited,
     };
-    let node = show_git_spec_details(repository, node);
+    let node = get_commit(repository, node);
     println!("{:?}", node);
 }
 
-fn show_git_spec_details(repository: &Repository, mut node: GitNode) -> GitNode {
+fn get_commit(repository: &Repository, mut node: CommitFrame) -> CommitFrame {
     let git_spec = node.git_spec.clone();
     println!("Git spec: {:?}", git_spec);
 
@@ -43,17 +71,16 @@ fn show_git_spec_details(repository: &Repository, mut node: GitNode) -> GitNode 
             println!("ID id {:?} or kind {:?}", oid, tree_obj.kind());
 
             match tree_obj.kind() {
-                Some(ObjectType::Tree) => {
-                    let mut branches = get_items_of_tree(tree_obj.as_tree().unwrap());
-                    node.branches.append(&mut branches);
-                }
                 Some(ObjectType::Commit) => {
                     match tree_obj.as_commit() {
                         Some(commit) => {
                             match commit.tree() {
                                 Ok(t) => {
-                                    let mut branches = get_items_of_tree(&t);
-                                    node.branches.append(&mut branches);
+                                    node.is_visited =
+                                        CommitFrameState::Visited(PopulatedCommit {
+                                            file_structure: get_tree(&t),
+                                            parents: get_commit_parents(&commit),
+                                        });
                                 }
                                 Err(_) => println!("Could not extract tree of commit"),
                             };
@@ -61,7 +88,7 @@ fn show_git_spec_details(repository: &Repository, mut node: GitNode) -> GitNode 
                         None => println!("Could not extract commit"),
                     };
                 }
-                _ => println!("Could not get the kind for tree object"),
+                _ => println!("This is not a commit!"),
             }
         }
         Err(_) => println!("Could not parse the given revision specification"),
@@ -69,9 +96,32 @@ fn show_git_spec_details(repository: &Repository, mut node: GitNode) -> GitNode 
     node
 }
 
-pub fn load_repository(path: &String) -> Repository {
-    match Repository::open(path.clone()) {
-        Ok(repository) => repository,
-        Err(e) => panic!("Could not open repository"),
+fn get_tree(tree: &Tree) -> FileStructure {
+    let mut blobs: Vec<CommitTreeBlob> = Vec::new();
+    for item in tree.iter() {
+        println!("{:?}", item.name().unwrap());
+        match item.kind() {
+            Some(ObjectType::Blob) => blobs.push(CommitTreeBlob {
+                git_spec: item.id().to_string(),
+                label: item.name().unwrap().to_string(),
+                is_directory: false,
+            }),
+            _ => {}
+        }
     }
+    FileStructure {
+        git_spec: tree.id().to_string(),
+        blobs,
+    }
+}
+
+fn get_commit_parents(commit: &Commit) -> Vec<CommitFrame> {
+    let mut parents: Vec<CommitFrame> = Vec::new();
+    for parent_commit in commit.parents() {
+        parents.push(CommitFrame {
+            git_spec: parent_commit.id().to_string(),
+            is_visited: CommitFrameState::NotVisited,
+        })
+    }
+    parents
 }

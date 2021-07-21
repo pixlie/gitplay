@@ -1,4 +1,4 @@
-use git2::{Commit, Repository, Tree, ObjectType};
+use git2::{Commit, ObjectType, Repository, Tree};
 use std::default;
 use std::env;
 use std::fmt;
