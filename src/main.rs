@@ -1,8 +1,5 @@
-use git2::{Commit, ObjectType, Repository, Tree};
-use std::default;
+use git2::{Repository};
 use std::env;
-use std::fmt;
-use std::str;
 
 mod walker;
 
