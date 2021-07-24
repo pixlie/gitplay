@@ -1,10 +1,7 @@
-use git2::{Branch, Commit, ObjectType, Oid, Reference, Repository, Time, Tree};
-use std::collections::HashMap;
-use std::hash::Hash;
+use git2::{Commit, ObjectType, Repository};
 
 struct GitLog<'log> {
     repository: &'log Repository,
-    curr: usize,
     commit_frames: Vec<CommitFrame>,
     // branch: &'log Reference<'log>,
 }
@@ -13,7 +10,6 @@ impl<'log> GitLog<'log> {
     fn new(repository: &Repository) -> GitLog {
         let mut log = GitLog {
             repository,
-            curr: 0,
             commit_frames: Vec::new(),
             // branch: &head,
         };
@@ -23,7 +19,7 @@ impl<'log> GitLog<'log> {
     }
 
     fn read_current_log(&mut self) {
-        let git_spec = self
+        let head_git_spec = self
             .repository
             .head()
             .unwrap()
@@ -31,22 +27,28 @@ impl<'log> GitLog<'log> {
             .unwrap()
             .to_string();
         let mut curr: usize = 0;
-        let mut git_specs: Vec<String> = Vec::from([git_spec.clone()]);
+        let mut git_specs: Vec<String> = Vec::from([head_git_spec.clone()]);
         let mut commit_frames: Vec<CommitFrame> = Vec::new();
 
         loop {
-            if curr >= commit_frames.len() {
+            if curr >= git_specs.len() {
                 break;
             }
 
-            let commit_frame_curr = commit_frames.get(curr).unwrap();
-            let commit_frame_visited = get_commit(self.repository, commit_frame_curr.clone());
+            let git_spec = git_specs.get(curr).unwrap();
+            let commit_frame_visited = get_commit(self.repository, git_spec.clone());
 
-            for parent_commit in commit_frame_visited.parents.iter() {
-                if !git_specs.contains(parent_commit) {
-                    commit_frames.push(commit_frame_visited.clone());
-                    git_specs.push(parent_commit.clone());
+            match commit_frame_visited {
+                Some(x) => {
+                    commit_frames.push(x.clone());
+
+                    for parent_commit in x.parents.iter() {
+                        if !git_specs.contains(parent_commit) {
+                            git_specs.push(parent_commit.clone());
+                        }
+                    }
                 }
+                None => {}
             }
 
             curr += 1;
@@ -66,7 +68,7 @@ struct CommitFrame {
     git_spec: String,
     commit_message: String,
     time: i64,
-    file_structure: FileStructure,
+    file_structure: Option<FileStructure>,
     parents: Vec<String>,
 }
 
@@ -91,7 +93,7 @@ pub fn load_repository(path: &String) -> Repository {
 }
 
 pub fn walk_repository_from_head(repository: &Repository) {
-    let mut log = GitLog::new(repository);
+    let log = GitLog::new(repository);
     let mut counter: u32 = 0;
     for commit in log.commit_frames.iter() {
         counter += 1;
@@ -103,49 +105,59 @@ pub fn walk_repository_from_head(repository: &Repository) {
     println!("{:?}", counter);
 }
 
-fn get_commit(repository: &Repository, mut node: CommitFrame) -> CommitFrame {
-    let git_spec = node.git_spec.clone();
-
+fn get_commit(repository: &Repository, git_spec: String) -> Option<CommitFrame> {
     match repository.revparse_single(git_spec.as_str()) {
         Ok(tree_obj) => match tree_obj.kind() {
             Some(ObjectType::Commit) => {
                 match tree_obj.as_commit() {
-                    Some(commit) => {
-                        match commit.tree() {
-                            Ok(t) => {
-                                node.parents = get_commit_parents(&commit);
-                                node.commit_message = commit.message().unwrap().to_string();
-                                node.time = commit.time().seconds();
-                                node.file_structure = get_tree(&t);
-                            }
-                            Err(_) => println!("Could not extract tree of commit"),
-                        };
+                    Some(commit) => Some(CommitFrame {
+                        git_spec,
+                        parents: get_commit_parents(&commit),
+                        commit_message: commit.message().unwrap().to_string(),
+                        time: commit.time().seconds(),
+                        file_structure: get_tree(&commit),
+                    }),
+                    None => {
+                        println!("Could not extract commit");
+                        None
                     }
-                    None => println!("Could not extract commit"),
-                };
+                }
             }
-            _ => println!("This is not a commit!"),
+            _ => {
+                println!("This is not a commit!");
+                None
+            }
         },
-        Err(_) => println!("Could not parse the given revision specification"),
-    };
-    node
-}
-
-fn get_tree(tree: &Tree) -> FileStructure {
-    let mut blobs: Vec<CommitTreeBlob> = Vec::new();
-    for item in tree.iter() {
-        match item.kind() {
-            Some(ObjectType::Blob) => blobs.push(CommitTreeBlob {
-                git_spec: item.id().to_string(),
-                label: item.name().unwrap().to_string(),
-                is_directory: false,
-            }),
-            _ => {}
+        Err(_) => {
+            println!("Could not parse the given revision specification");
+            None
         }
     }
-    FileStructure {
-        git_spec: tree.id().to_string(),
-        blobs,
+}
+
+fn get_tree(commit: &Commit) -> Option<FileStructure> {
+    match commit.tree() {
+        Ok(tree) => {
+            let mut blobs: Vec<CommitTreeBlob> = Vec::new();
+            for item in tree.iter() {
+                match item.kind() {
+                    Some(ObjectType::Blob) => blobs.push(CommitTreeBlob {
+                        git_spec: item.id().to_string(),
+                        label: item.name().unwrap().to_string(),
+                        is_directory: false,
+                    }),
+                    _ => {}
+                }
+            };
+            Some(FileStructure {
+                git_spec: tree.id().to_string(),
+                blobs,
+            })
+        }
+        Err(_) => {
+            println!("Could not extract tree of commit");
+            None
+        }
     }
 }
 
