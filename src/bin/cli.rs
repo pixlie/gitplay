@@ -1,6 +1,7 @@
 use git2::{Repository};
 use std::env;
 
+#[path = "../walker/mod.rs"]
 mod walker;
 
 fn main() {
@@ -10,7 +11,7 @@ fn main() {
     if args.len() == 2 {
         selected_path.push_str(&args[1])
     } else {
-        selected_path.push_str("/home/brainless/Projects/dwata");
+        selected_path.push_str("/home/brainless/Projects/coronasafe/care_fe");
     }
 
     println!("repository path {:?}", selected_path);
