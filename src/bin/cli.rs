@@ -1,4 +1,4 @@
-use git2::{Repository};
+use git2::Repository;
 use std::env;
 
 #[path = "../walker/mod.rs"]

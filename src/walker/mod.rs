@@ -108,21 +108,19 @@ pub fn walk_repository_from_head(repository: &Repository) {
 fn get_commit(repository: &Repository, git_spec: String) -> Option<CommitFrame> {
     match repository.revparse_single(git_spec.as_str()) {
         Ok(tree_obj) => match tree_obj.kind() {
-            Some(ObjectType::Commit) => {
-                match tree_obj.as_commit() {
-                    Some(commit) => Some(CommitFrame {
-                        git_spec,
-                        parents: get_commit_parents(&commit),
-                        commit_message: commit.message().unwrap().to_string(),
-                        time: commit.time().seconds(),
-                        file_structure: get_tree(&commit),
-                    }),
-                    None => {
-                        println!("Could not extract commit");
-                        None
-                    }
+            Some(ObjectType::Commit) => match tree_obj.as_commit() {
+                Some(commit) => Some(CommitFrame {
+                    git_spec,
+                    parents: get_commit_parents(&commit),
+                    commit_message: commit.message().unwrap().to_string(),
+                    time: commit.time().seconds(),
+                    file_structure: get_tree(&commit),
+                }),
+                None => {
+                    println!("Could not extract commit");
+                    None
                 }
-            }
+            },
             _ => {
                 println!("This is not a commit!");
                 None
@@ -148,7 +146,7 @@ fn get_tree(commit: &Commit) -> Option<FileStructure> {
                     }),
                     _ => {}
                 }
-            };
+            }
             Some(FileStructure {
                 git_spec: tree.id().to_string(),
                 blobs,
