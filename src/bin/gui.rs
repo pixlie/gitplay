@@ -1,81 +1,75 @@
-use std::env;
-#[macro_use]
-extern crate smart_default;
 use git2::Repository;
-use iced::{
-    text_input, Application, Clipboard, Column, Command, Container, Element, HorizontalAlignment,
-    Length, Settings, Text, TextInput,
-};
+use iced::window;
+use iced::Command;
+use iced::Settings;
+use iced::{container, HorizontalAlignment, Length};
+use iced::{text, text_input};
 use std::default;
+use std::env;
 use std::fmt;
 
 pub fn main() -> iced::Result {
-    GitPlay::run(Settings::default())
+    GitPlay::run(Settings {
+        window: window::Settings {
+            size: (500, 500),
+            ..window::Settings::default()
+        },
+        ..Settings::default()
+    })
 }
 
-enum GitPlayMachine {
-    RepositoryNone,
-    // RepositoryLoading,
-    RepositoryReady,
-    RepositoryUnloading,
+#[derive(Debug)]
+enum GitPlay {
+    RepositoryLoading(LoadingState),
+    // RepositoryReading(LoadingState),
+    // RepositoryReady(ReadyState),
+    // RepositoryUnloading,
 }
 
-struct GitPlay {
-    current_state: GitPlayMachine,
-    input_path_to_repository: text_input::State,
-    path_to_repository: Option<String>,
+#[derive(Debug, Default)]
+struct LoadingState {
+    path_to_repository: String,
+}
+
+#[derive(Debug, Default)]
+struct ReadyState {
+    path_to_repository: String,
     repository: Option<Repository>,
-    current_commit_hash: Option<String>,
-    play_state: PlayState,
-    playback_speed: PlaybackSpeed,
-    total_commit_count: u32,
-    created_at: u32,
+    // current_commit_hash: Option<String>,
+    // play_state: PlayState,
+    // playback_speed: PlaybackSpeed,
+    // total_commit_count: u32,
+    // created_at: u32,
 }
 
-impl default::Default for GitPlay {
-    fn default() -> Self {
-        GitPlay {
-            current_state: GitPlayMachine::RepositoryNone,
-            input_path_to_repository: text_input::State::default(),
-            path_to_repository: None,
-            repository: None,
-            current_commit_hash: None,
-            play_state: PlayState::Paused,
-            playback_speed: PlaybackSpeed::Normal,
-            total_commit_count: 0,
-            created_at: 0,
-        }
-    }
-}
-
-#[derive(Clone, Debug, SmartDefault)]
+#[derive(Debug, Default, Clone)]
 enum PlayState {
-    #[default]
+    // #[default]
     Paused,
-    Playing,
-    ReachedEnd,
+    // Playing,
+    // ReachedEnd,
 }
 
-#[derive(Debug, Clone, SmartDefault)]
+#[derive(Debug, Default, Clone)]
 enum PlaybackSpeed {
-    #[default]
+    // #[default]
     Normal,
     // One commit progress per 100 milliseconds
-    Half,
+    // Half,
     // Half the speed of Normal
-    Twice,
+    // Twice,
     // Twice the speed of Normal
-    FourTimes,
+    // FourTimes,
 }
 
 #[derive(Clone)]
 enum Message {
     ChangeRepositoryPath(String),
     RepositoryPathSubmitted,
-    RepositoryLoaded,
-    RepositoryRewind,
-    RepositoryPlay,
-    RepositoryPause,
+    // RepositoryLoaded,
+    // RepositoryRewind,
+    // RepositoryPlaying,
+    // RepositoryPaused,
 }
 
 impl Application for GitPlay {
@@ -83,7 +77,7 @@ impl Application for GitPlay {
     type Message = Message;
     type Flags = ();
 
-    fn new(_flags: ()) -> (Self, Command<Self::Message>) {
+    fn new(_flags: ()) -> (GitPlay, Command<Message>) {
         // When this application loads, it loads with a default state
         (
             GitPlay {
@@ -105,33 +99,34 @@ impl Application for GitPlay {
             selected_path.push_str(&cwd);
         }
 
-        String::from(format!("Showing git repository {}", selected_path))
+        format!("Git repository: {}", selected_path)
     }
 
-    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         match self.current_state {
-            GitPlayMachine::RepositoryNone => match message {
+            GitPlay::RepositoryLoading(state) => match message {
                 Message::ChangeRepositoryPath(path) => {
-                    self.path_to_repository = Option::Some(path);
+                    state.path_to_repository = path;
+
+                    Command::none()
                 }
                 Message::RepositoryPathSubmitted => {
                     // Let us try to load the Git repository
-                    // self.current_state = GitPlayMachine::RepositoryLoading;
 
-                    match &self.path_to_repository {
-                        Some(path) => match load_repository(path) {
-                            Ok(repository) => {
-                                self.repository = Some(repository);
-                                self.current_state = GitPlayMachine::RepositoryReady;
-                            }
-                            Err(_) => {
-                                self.current_state = GitPlayMachine::RepositoryNone;
-                            }
-                        },
-                        None => (),
-                    }
-                }
-                _ => (),
+                    // match &self.path_to_repository {
+                    //     Some(path) => match load_repository(path) {
+                    //         Ok(repository) => {
+                    //             self.repository = Some(repository);
+                    //             self.current_state = GitPlayMachine::RepositoryReady;
+                    //         }
+                    //         Err(_) => {
+                    //             self.current_state = GitPlayMachine::RepositoryNone;
+                    //         }
+                    //     },
+                    //     None => (),
+                    // }
+                    Command::none()
+                } // _ => (),
             },
 
             // Default case handling, temporary code
@@ -141,43 +136,56 @@ impl Application for GitPlay {
         Command::none()
     }
 
-    fn view(&mut self) -> Element<Self::Message> {
-        match self.current_state {
-            GitPlayMachine::RepositoryNone => {
-                let path = match &self.path_to_repository {
-                    Some(path) => path.as_str(),
-                    None => "",
-                };
-
-                Container::new(
-                    Column::new()
-                        .spacing(20)
-                        .push(
-                            Text::new("Please select a repository")
-                                .horizontal_alignment(HorizontalAlignment::Center)
-                                .size(50),
-                        )
-                        .push(
-                            TextInput::new(
-                                &mut self.input_path_to_repository,
-                                "Path to a Git repository",
-                                path,
-                                Message::ChangeRepositoryPath,
-                            )
-                            .padding(15)
-                            .size(30)
-                            .on_submit(Message::RepositoryPathSubmitted),
-                        )
-                        .push(
-                            Text::new(path)
-                                .horizontal_alignment(HorizontalAlignment::Center)
-                                .size(20),
-                        ),
+    fn view(&self) -> Element<Message> {
+        match self {
+            GitPlay::RepositoryLoading(LoadingState { path_to_repository }) => {
+                let label = text("Please select a repository")
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .size(50);
+                let input = text_input(
+                    "Path to a Git repository",
+                    path_to_repository,
+                    Message::ChangeRepositoryPath,
                 )
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .center_y()
-                .into()
+                .padding(15)
+                .size(30)
+                .on_submic(Message::RepositoryPathSubmitted);
+                let path_display = text(path_to_repository).size(30);
+
+                // container(
+                //     Column::new()
+                //         .spacing(20)
+                //         .push(
+                //             Text::new("Please select a repository")
+                //                 .horizontal_alignment(HorizontalAlignment::Center)
+                //                 .size(50),
+                //         )
+                //         .push(
+                //             TextInput::new(
+                //                 &mut self.input_path_to_repository,
+                //                 "Path to a Git repository",
+                //                 path,
+                //                 Message::ChangeRepositoryPath,
+                //             )
+                //             .padding(15)
+                //             .size(30)
+                //             .on_submit(Message::RepositoryPathSubmitted),
+                //         )
+                //         .push(
+                //             Text::new(path)
+                //                 .horizontal_alignment(HorizontalAlignment::Center)
+                //                 .size(20),
+                //         ),
+                // )
+                // .width(Length::Fill)
+                // .height(Length::Fill)
+                // .center_y()
+                // .into()
+                container(column![label, input, path_display])
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .center_y()
+                    .into()
             }
 
             /*
@@ -194,25 +202,24 @@ impl Application for GitPlay {
             .center_y()
             .into(),
              */
-            GitPlayMachine::RepositoryReady => Container::new(
-                Text::new("Let's play!")
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(50),
-            )
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_y()
-            .into(),
-
-            GitPlayMachine::RepositoryUnloading => Container::new(
-                Text::new("Bye bye")
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(50),
-            )
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_y()
-            .into(),
+            // GitPlay::RepositoryReady => Container::new(
+            //     Text::new("Let's play!")
+            //         .horizontal_alignment(HorizontalAlignment::Center)
+            //         .size(50),
+            // )
+            // .width(Length::Fill)
+            // .height(Length::Fill)
+            // .center_y()
+            // .into(),
+            // GitPlayMachine::RepositoryUnloading => Container::new(
+            //     Text::new("Bye bye")
+            //         .horizontal_alignment(HorizontalAlignment::Center)
+            //         .size(50),
+            // )
+            // .width(Length::Fill)
+            // .height(Length::Fill)
+            // .center_y()
+            // .into(),
         }
     }
 }
@@ -233,19 +240,19 @@ fn load_repository(path: &String) -> Result<Repository, RepositoryActionError> {
     }
 }
 
-impl fmt::Debug for GitPlay {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let path = match &self.path_to_repository {
-            Some(path) => path.as_str(),
-            None => "",
-        };
+// impl fmt::Debug for GitPlay {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         let path = match &self.path_to_repository {
+//             Some(path) => path.as_str(),
+//             None => "",
+//         };
 
-        write!(f, "{:?}", path)
-    }
-}
+//         write!(f, "{:?}", path)
+//     }
+// }
 
-impl fmt::Debug for Message {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Message")
-    }
-}
+// impl fmt::Debug for Message {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "Message")
+//     }
+// }
