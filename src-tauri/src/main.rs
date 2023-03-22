@@ -10,7 +10,6 @@ use iced::Theme;
 use iced::{window, Command};
 use std::env;
 
-#[path = "../walker/mod.rs"]
 mod walker;
 
 pub fn main() -> iced::Result {
