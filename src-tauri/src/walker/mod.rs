@@ -92,17 +92,14 @@ pub fn load_repository(path: &String) -> Repository {
     }
 }
 
-pub fn walk_repository_from_head(repository: &Repository) {
+pub fn walk_repository_from_head(repository: &Repository) -> Vec<(String, String)> {
     let log = GitLog::new(repository);
-    let mut counter: u32 = 0;
+    let mut output: Vec<(String, String)> = vec![];
+
     for commit in log.commit_frames.iter() {
-        counter += 1;
-        println!(
-            "{:?} (Commit): {:?}",
-            commit.git_spec, commit.commit_message
-        );
+        output.push((commit.git_spec.to_string(), commit.commit_message.to_string()))
     }
-    println!("{:?}", counter);
+    output
 }
 
 fn get_commit(repository: &Repository, git_spec: String) -> Option<CommitFrame> {
