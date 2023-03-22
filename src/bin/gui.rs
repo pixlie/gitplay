@@ -1,17 +1,22 @@
+use core::fmt;
 use git2::Repository;
-use iced::window;
-use iced::Command;
+use iced::alignment::Horizontal;
+use iced::widget::{column, container, text, text_input};
+use iced::Application;
+use iced::Element;
+use iced::Length;
 use iced::Settings;
-use iced::{container, HorizontalAlignment, Length};
-use iced::{text, text_input};
-use std::default;
+use iced::Theme;
+use iced::{window, Command};
 use std::env;
-use std::fmt;
+
+#[path = "../walker/mod.rs"]
+mod walker;
 
 pub fn main() -> iced::Result {
     GitPlay::run(Settings {
         window: window::Settings {
-            size: (500, 500),
+            size: (800, 800),
             ..window::Settings::default()
         },
         ..Settings::default()
@@ -21,8 +26,8 @@ pub fn main() -> iced::Result {
 #[derive(Debug)]
 enum GitPlay {
     RepositoryLoading(LoadingState),
-    // RepositoryReading(LoadingState),
-    // RepositoryReady(ReadyState),
+    RepositoryReading(LoadingState),
+    RepositoryReady(ReadyState),
     // RepositoryUnloading,
 }
 
@@ -31,10 +36,9 @@ struct LoadingState {
     path_to_repository: String,
 }
 
-#[derive(Debug, Default)]
 struct ReadyState {
     path_to_repository: String,
-    repository: Option<Repository>,
+    repository: Repository,
     // current_commit_hash: Option<String>,
     // play_state: PlayState,
     // playback_speed: PlaybackSpeed,
@@ -44,7 +48,7 @@ struct ReadyState {
 
 #[derive(Debug, Default, Clone)]
 enum PlayState {
-    // #[default]
+    #[default]
     Paused,
     // Playing,
     // ReachedEnd,
@@ -52,7 +56,7 @@ enum PlayState {
 
 #[derive(Debug, Default, Clone)]
 enum PlaybackSpeed {
-    // #[default]
+    #[default]
     Normal,
     // One commit progress per 100 milliseconds
     // Half,
@@ -62,11 +66,12 @@ enum PlaybackSpeed {
     // FourTimes,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 enum Message {
     ChangeRepositoryPath(String),
     RepositoryPathSubmitted,
-    // RepositoryLoaded,
+    DontChangeRepositoryPath(String),
+    // RepositoryReady,
     // RepositoryRewind,
     // RepositoryPlaying,
     // RepositoryPaused,
@@ -76,13 +81,14 @@ impl Application for GitPlay {
     type Executor = iced::executor::Default;
     type Message = Message;
     type Flags = ();
+    type Theme = Theme;
 
     fn new(_flags: ()) -> (GitPlay, Command<Message>) {
         // When this application loads, it loads with a default state
         (
-            GitPlay {
-                ..GitPlay::default()
-            },
+            GitPlay::RepositoryLoading(LoadingState {
+                path_to_repository: "".to_string(),
+            }),
             Command::none(),
         )
     }
@@ -103,92 +109,59 @@ impl Application for GitPlay {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        match self.current_state {
-            GitPlay::RepositoryLoading(state) => match message {
-                Message::ChangeRepositoryPath(path) => {
-                    state.path_to_repository = path;
+        match self {
+            GitPlay::RepositoryLoading(state) => {
+                match message {
+                    Message::ChangeRepositoryPath(path) => {
+                        state.path_to_repository = path;
 
-                    Command::none()
+                        Command::none()
+                    }
+                    Message::RepositoryPathSubmitted => {
+                        // Made the input deactive
+                        *self = GitPlay::RepositoryReading(LoadingState {
+                            path_to_repository: state.path_to_repository.clone(),
+                        });
+
+                        Command::none()
+                    }
+                    Message::DontChangeRepositoryPath(_) => Command::none(),
                 }
-                Message::RepositoryPathSubmitted => {
-                    // Let us try to load the Git repository
+            }
+            GitPlay::RepositoryReading(state) => {
+                let repository = walker::load_repository(&state.path_to_repository);
+                *self = GitPlay::RepositoryReady(ReadyState {
+                    path_to_repository: state.path_to_repository.clone(),
+                    repository,
+                });
 
-                    // match &self.path_to_repository {
-                    //     Some(path) => match load_repository(path) {
-                    //         Ok(repository) => {
-                    //             self.repository = Some(repository);
-                    //             self.current_state = GitPlayMachine::RepositoryReady;
-                    //         }
-                    //         Err(_) => {
-                    //             self.current_state = GitPlayMachine::RepositoryNone;
-                    //         }
-                    //     },
-                    //     None => (),
-                    // }
-                    Command::none()
-                } // _ => (),
-            },
-
-            // Default case handling, temporary code
-            _ => (),
+                Command::none()
+            }
+            GitPlay::RepositoryReady(_state) => Command::none(),
         }
-
-        Command::none()
     }
 
     fn view(&self) -> Element<Message> {
         match self {
             GitPlay::RepositoryLoading(LoadingState { path_to_repository }) => {
-                let label = text("Please select a repository")
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(50);
-                let input = text_input(
-                    "Path to a Git repository",
-                    path_to_repository,
-                    Message::ChangeRepositoryPath,
-                )
-                .padding(15)
-                .size(30)
-                .on_submic(Message::RepositoryPathSubmitted);
+                repository_loading_view(path_to_repository)
+            }
+
+            GitPlay::RepositoryReading(LoadingState { path_to_repository }) => {
+                repository_reading_view(path_to_repository)
+            }
+
+            GitPlay::RepositoryReady(ReadyState { path_to_repository, repository }) => {
                 let path_display = text(path_to_repository).size(30);
 
-                // container(
-                //     Column::new()
-                //         .spacing(20)
-                //         .push(
-                //             Text::new("Please select a repository")
-                //                 .horizontal_alignment(HorizontalAlignment::Center)
-                //                 .size(50),
-                //         )
-                //         .push(
-                //             TextInput::new(
-                //                 &mut self.input_path_to_repository,
-                //                 "Path to a Git repository",
-                //                 path,
-                //                 Message::ChangeRepositoryPath,
-                //             )
-                //             .padding(15)
-                //             .size(30)
-                //             .on_submit(Message::RepositoryPathSubmitted),
-                //         )
-                //         .push(
-                //             Text::new(path)
-                //                 .horizontal_alignment(HorizontalAlignment::Center)
-                //                 .size(20),
-                //         ),
-                // )
-                // .width(Length::Fill)
-                // .height(Length::Fill)
-                // .center_y()
-                // .into()
-                container(column![label, input, path_display])
+                container(column![path_display])
                     .width(Length::Fill)
-                    .height(Length::Fill)
+                    .padding(10)
                     .center_y()
                     .into()
             }
 
-            /*
+                        /*
             GitPlayMachine::RepositoryLoading => Container::new(
                 Text::new(format!(
                     "Loading Git history of {}",
@@ -224,21 +197,63 @@ impl Application for GitPlay {
     }
 }
 
-#[derive(Clone, Debug)]
-enum RepositoryActionError {
-    LoadingError,
+fn repository_loading_view(path_to_repository: &str) -> Element<Message> {
+    let label = text("Please select a repository")
+        .horizontal_alignment(Horizontal::Center)
+        .size(15);
+    let input = text_input(
+        "Path to a Git repository",
+        path_to_repository,
+        Message::ChangeRepositoryPath,
+    )
+    .padding(15)
+    .size(30)
+    .on_submit(Message::RepositoryPathSubmitted);
+    let path_display = text(path_to_repository).size(30);
+
+    container(column![label, input, path_display])
+        .width(Length::Fill)
+        .padding(10)
+        .center_y()
+        .into()
 }
 
-fn load_repository(path: &String) -> Result<Repository, RepositoryActionError> {
-    match Repository::open(path.clone()) {
-        Ok(repository) => Ok(repository),
-        Err(e) => {
-            println!("Got an error when trying to open repository {}", e);
+fn repository_reading_view(path_to_repository: &str) -> Element<Message> {
+    let label = text("Please select a repository")
+        .horizontal_alignment(Horizontal::Center)
+        .size(15);
+    let input = text_input(
+        "Path to a Git repository",
+        path_to_repository,
+        Message::DontChangeRepositoryPath,
+    )
+    .padding(15)
+    .size(30)
+    .on_submit(Message::RepositoryPathSubmitted);
+    let path_display = text(path_to_repository).size(30);
 
-            Err(RepositoryActionError::LoadingError)
-        }
-    }
+    container(column![label, input, path_display])
+        .width(Length::Fill)
+        .padding(10)
+        .center_y()
+        .into()
 }
+
+// #[derive(Clone, Debug)]
+// enum RepositoryActionError {
+//     LoadingError,
+// }
+
+// fn load_repository(path: &String) -> Result<Repository, RepositoryActionError> {
+//     match Repository::open(path.clone()) {
+//         Ok(repository) => Ok(repository),
+//         Err(e) => {
+//             println!("Got an error when trying to open repository {}", e);
+
+//             Err(RepositoryActionError::LoadingError)
+//         }
+//     }
+// }
 
 // impl fmt::Debug for GitPlay {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -251,8 +266,8 @@ fn load_repository(path: &String) -> Result<Repository, RepositoryActionError> {
 //     }
 // }
 
-// impl fmt::Debug for Message {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "Message")
-//     }
-// }
+impl fmt::Debug for ReadyState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Repository: {}", self.path_to_repository)
+    }
+}

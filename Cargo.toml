@@ -2,10 +2,10 @@
 name = "gitplay"
 version = "0.4.0"
 authors = ["Sumit Datta <sumitdatta@gmail.com>"]
-edition = "2018"
+edition = "2021"
 readme = "README.md"
 license = "MIT"
 
 [dependencies]
-iced = "0.8.0"
+iced = "0.8"
 git2 = "0.16.1"
