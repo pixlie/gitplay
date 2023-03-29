@@ -1,12 +1,17 @@
+import Controls from "./components/Controls";
 import Log from "./components/Log";
 
 function App() {
   return (
-    <div class="container w-full">
-      <h1 class="font-bold">Welcome to GitPlay!</h1>
-      
-      <Log />
-    </div>
+    <>
+      <Controls />
+      <div class="container w-full pt-16 flex">
+        <div class="w-64">
+          <Log />
+        </div>
+        <div class="grow"></div>
+      </div>
+    </>
   );
 }
 
