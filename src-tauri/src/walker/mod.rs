@@ -1,4 +1,5 @@
 use git2::{Commit, ObjectType, Repository};
+use serde::Serialize;
 
 struct GitLog<'log> {
     repository: &'log Repository,
@@ -39,7 +40,7 @@ impl<'log> GitLog<'log> {
             let commit_frame_visited = get_commit(self.repository, git_spec.clone());
 
             match commit_frame_visited {
-                Some(x) => {
+                Ok(x) => {
                     commit_frames.push(x.clone());
 
                     for parent_commit in x.parents.iter() {
@@ -48,7 +49,7 @@ impl<'log> GitLog<'log> {
                         }
                     }
                 }
-                None => {}
+                Err(_) => {}
             }
 
             curr += 1;
@@ -63,89 +64,83 @@ impl<'log> GitLog<'log> {
 CommitFrame is a single commit in the timeline of the Git repository. Each frame is like a frame
 in a movie that the user can pause at. Each frame has its file structure and parents.
  */
-#[derive(Clone, Debug)]
-struct CommitFrame {
-    git_spec: String,
+#[derive(Clone, Debug, Serialize)]
+pub struct CommitFrame {
+    commit_id: String,
     commit_message: String,
     time: i64,
-    file_structure: Option<FileStructure>,
+    file_structure: Option<FileTree>,
     parents: Vec<String>,
 }
 
-#[derive(Clone, Debug)]
-struct FileStructure {
-    git_spec: String,
-    blobs: Vec<CommitTreeBlob>,
+#[derive(Clone, Debug, Serialize)]
+struct FileTree {
+    object_id: String,
+    blobs: Vec<FileBlob>,
 }
 
-#[derive(Clone, Debug)]
-struct CommitTreeBlob {
-    git_spec: String,
-    label: String,
+#[derive(Clone, Debug, Serialize)]
+struct FileBlob {
+    object_id: String,
+    name: String,
     is_directory: bool,
 }
 
-pub fn load_repository(path: &String) -> Repository {
-    match Repository::open(path.clone()) {
-        Ok(repository) => repository,
-        Err(_) => panic!("Could not open repository"),
-    }
-}
+// pub fn load_repository(path: &String) -> Repository {
+//     match Repository::open(path.clone()) {
+//         Ok(repository) => repository,
+//         Err(_) => panic!("Could not open repository"),
+//     }
+// }
 
 pub fn walk_repository_from_head(repository: &Repository) -> Vec<(String, String)> {
     let log = GitLog::new(repository);
     let mut output: Vec<(String, String)> = vec![];
 
     for commit in log.commit_frames.iter() {
-        output.push((commit.git_spec.to_string(), commit.commit_message.to_string()))
+        output.push((
+            commit.commit_id.to_string(),
+            commit.commit_message.to_string(),
+        ))
     }
     output
 }
 
-fn get_commit(repository: &Repository, git_spec: String) -> Option<CommitFrame> {
+pub fn get_commit(repository: &Repository, git_spec: String) -> Result<CommitFrame, String> {
     match repository.revparse_single(git_spec.as_str()) {
         Ok(tree_obj) => match tree_obj.kind() {
             Some(ObjectType::Commit) => match tree_obj.as_commit() {
-                Some(commit) => Some(CommitFrame {
-                    git_spec,
+                Some(commit) => Ok(CommitFrame {
+                    commit_id: git_spec,
                     parents: get_commit_parents(&commit),
                     commit_message: commit.message().unwrap().to_string(),
                     time: commit.time().seconds(),
                     file_structure: get_tree(&commit),
                 }),
-                None => {
-                    println!("Could not extract commit");
-                    None
-                }
+                None => Err("Could not extract commit".into()),
             },
-            _ => {
-                println!("This is not a commit!");
-                None
-            }
+            _ => Err("This is not a commit!".into()),
         },
-        Err(_) => {
-            println!("Could not parse the given revision specification");
-            None
-        }
+        Err(_) => Err("Could not parse the given revision specification".into()),
     }
 }
 
-fn get_tree(commit: &Commit) -> Option<FileStructure> {
+fn get_tree(commit: &Commit) -> Option<FileTree> {
     match commit.tree() {
         Ok(tree) => {
-            let mut blobs: Vec<CommitTreeBlob> = Vec::new();
+            let mut blobs: Vec<FileBlob> = Vec::new();
             for item in tree.iter() {
                 match item.kind() {
-                    Some(ObjectType::Blob) => blobs.push(CommitTreeBlob {
-                        git_spec: item.id().to_string(),
-                        label: item.name().unwrap().to_string(),
+                    Some(ObjectType::Blob) => blobs.push(FileBlob {
+                        object_id: item.id().to_string(),
+                        name: item.name().unwrap().to_string(),
                         is_directory: false,
                     }),
                     _ => {}
                 }
             }
-            Some(FileStructure {
-                git_spec: tree.id().to_string(),
+            Some(FileTree {
+                object_id: tree.id().to_string(),
                 blobs,
             })
         }

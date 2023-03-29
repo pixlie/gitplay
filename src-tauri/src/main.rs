@@ -2,23 +2,32 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use git2::Repository;
-use tauri;
+use tauri::{self};
 
 mod walker;
 
 #[tauri::command]
-fn open_repository(_path: &str) -> Result<Vec<(String, String)>, String> {
-    match Repository::open("/home/brainless/Projects/dwata") {
-        Ok(repository) => {
-            Ok(walker::walk_repository_from_head(&repository))
-        }
-        Err(_) => Err("Could not load repository".into())
+fn open_repository(path: &str) -> Result<Vec<(String, String)>, String> {
+    match Repository::open(path) {
+        Ok(repository) => Ok(walker::walk_repository_from_head(&repository)),
+        Err(_) => Err("Could not load repository".into()),
+    }
+}
+
+#[tauri::command]
+fn read_commit(path: &str, commit_id: &str) -> Result<walker::CommitFrame, String> {
+    match Repository::open(path) {
+        Ok(repository) => match walker::get_commit(&repository, commit_id.to_string()) {
+            Ok(commit_frame) => Ok(commit_frame),
+            Err(_) => Err("Could not read commit".into()),
+        },
+        Err(_) => Err("Could not read commit".into()),
     }
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![open_repository])
+        .invoke_handler(tauri::generate_handler![open_repository, read_commit])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
