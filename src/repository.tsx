@@ -4,8 +4,6 @@ import { createContext, useContext } from "solid-js";
 
 import { APIRepositoryResponse } from "./apiTypes";
 
-const RepositoryContext = createContext<IStore>();
-
 interface IFileBlob {
   objectId: string;
   name: string;
@@ -41,21 +39,26 @@ interface IRepositoryProviderPropTypes {
   children: JSX.Element;
 }
 
-export function RepositoryProvider(props: IRepositoryProviderPropTypes) {
-  const [store, setStore] = createStore<IStore>({
+function makeRepository(
+  defaultStore: IStore = {
     playSpeed: 1,
     isPlaying: false,
-  });
+  }
+) {
+  const [store, setStore] = createStore<IStore>(defaultStore);
 
-  const repository = [
+  return [
     store,
     {
       setRepositoryPath(path: string) {
         setStore("repositoryPath", path);
       },
       setCommits(response: any) {
-        setStore("commits", (_) =>
-          (response as APIRepositoryResponse).reduce(
+        // console.log(response[0]);
+
+        setStore((state) => ({
+          ...state,
+          commits: (response as APIRepositoryResponse).reduce(
             (commits, x) => ({
               ...commits,
               [x[0]]: {
@@ -64,8 +67,12 @@ export function RepositoryProvider(props: IRepositoryProviderPropTypes) {
               },
             }),
             {}
-          )
-        );
+          ),
+          currentCommitId: response[0][0],
+        }));
+      },
+      setCurrentCommitId(commitId: string) {
+        setStore("currentCommitId", commitId);
       },
       setPlaying() {
         setStore("isPlaying", (isPlaying) => !isPlaying);
@@ -76,8 +83,12 @@ export function RepositoryProvider(props: IRepositoryProviderPropTypes) {
         );
       },
     },
-  ];
+  ] as const; // `as const` forces tuple type inference
+}
 
+const repository = makeRepository();
+
+export function RepositoryProvider(props: IRepositoryProviderPropTypes) {
   return (
     <RepositoryContext.Provider value={repository}>
       {props.children}
@@ -85,6 +96,7 @@ export function RepositoryProvider(props: IRepositoryProviderPropTypes) {
   );
 }
 
-export function useRepository() {
-  return useContext(RepositoryContext);
-}
+type TRepositoryContext = ReturnType<typeof makeRepository>;
+
+export const RepositoryContext = createContext<TRepositoryContext>(repository);
+export const useRepository = () => useContext(RepositoryContext);

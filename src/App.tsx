@@ -8,8 +8,9 @@ function App() {
       <RepositoryProvider>
         <>
           <Controls />
-          <div class="container w-full pt-16 flex">
-            <div class="w-64">
+
+          <div class="container flex">
+            <div class="w-64 pt-16">
               <Log />
             </div>
             <div class="grow"></div>

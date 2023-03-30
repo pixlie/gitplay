@@ -12,7 +12,7 @@ interface IButtonPropTypes {
 function Button(props: IButtonPropTypes): JSX.Element {
   return (
     <button
-      class="p-2 px-4 mx-2 rounded-md border-gray-100 border"
+      class="p-1.5 px-4 mx-2 rounded-md border-gray-300 bg-white border hover:shadow-sm hover:bg-gray-500 hover:text-white"
       onClick={props.onClick}
     >
       {props.label}
@@ -87,7 +87,7 @@ function PlaySpeed(): JSX.Element {
 
 function Controls(): JSX.Element {
   return (
-    <div class="py-2 w-full fixed bg-white">
+    <div class="py-3 w-full fixed bg-gray-100 border-b-gray-200 border">
       <OpenRepository />
       <Button label="Branch: main" />
       <PlayPause />

@@ -1,11 +1,17 @@
+import { useRepository } from "../repository";
+
 interface IPropTypes {
-  gitSpec: string;
+  commitId: string;
   commitMessage: string;
+  isCurrent?: boolean;
 }
 
-function Commit({ gitSpec, commitMessage }: IPropTypes) {
+function Commit({ commitId, commitMessage, isCurrent }: IPropTypes) {
+  const className =
+    "py-1 px-4 cursor-pointer hover:bg-gray-200 whitespace-nowrap overflow-hidden";
+
   return (
-    <div class="py-1 px-4 cursor-pointer hover:bg-gray-200 whitespace-nowrap overflow-hidden">
+    <div class={`${className}${isCurrent ? " bg-gray-300" : ""}`}>
       {commitMessage}
     </div>
   );
