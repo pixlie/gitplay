@@ -1,8 +1,8 @@
-import repository from "../repository";
+import { useRepository } from "../repository";
 import Commit from "./Commit";
 
 function Log() {
-  const [store, _] = repository;
+  const [store] = useRepository();
 
   return (
     <div class="">

@@ -1,55 +1,38 @@
-import { createSignal } from "solid-js";
+import { createSignal, useContext } from "solid-js";
 import type { JSX } from "solid-js";
-import repository from "../repository";
 import { invoke } from "@tauri-apps/api/tauri";
-import { APIRepositoryResponse } from "../apiTypes";
+
+import { useRepository } from "../repository";
 
 interface IButtonPropTypes {
   label: string;
-  onClick?: (e: MouseEvent) => void;
+  onClick?: JSX.EventHandler<HTMLButtonElement, MouseEvent>;
 }
 
-function Button({ label, onClick }: IButtonPropTypes): JSX.Element {
+function Button(props: IButtonPropTypes): JSX.Element {
   return (
     <button
       class="p-2 px-4 mx-2 rounded-md border-gray-100 border"
-      onClick={onClick}
+      onClick={props.onClick}
     >
-      {label}
+      {props.label}
     </button>
   );
 }
 
-function RepositoryForm(): JSX.Element {
-  const [store, setStore] = repository;
+function RepositoryForm({ setToggle }): JSX.Element {
+  const [store, { setRepositoryPath, setCommits }] = useRepository();
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (
     event
   ) => {
-    setStore((state) => ({
-      ...state,
-      repositoryPath: event.currentTarget.value,
-    }));
+    setRepositoryPath(event.currentTarget.value);
   };
 
-  const handleSave: JSX.EventHandler<HTMLButtonElement, InputEvent> = () => {
-    invoke("open_repository", { path: store.repositoryPath }).then(
-      (response) => {
-        setStore((state) => ({
-          ...state,
-          commits: (response as APIRepositoryResponse).reduce(
-            (commits, x) => ({
-              ...commits,
-              [x[0]]: {
-                commitId: x[0],
-                commitMessage: x[1],
-              },
-            }),
-            {}
-          ),
-        }));
-      }
-    );
+  const handleSave = () => {
+    invoke("open_repository", { path: store.repositoryPath }).then(setCommits);
+
+    setToggle(false);
   };
 
   return (
@@ -68,18 +51,37 @@ function RepositoryForm(): JSX.Element {
 function OpenRepository(): JSX.Element {
   const [toggle, setToggle] = createSignal<boolean>(false);
 
-  function handleClick() {
+  const handleClick = () => {
     setToggle(!toggle());
-  }
+  };
 
   return (
     <>
       {toggle() ? (
-        <RepositoryForm />
+        <RepositoryForm setToggle={setToggle} />
       ) : (
         <Button label="Open repository" onClick={handleClick} />
       )}
     </>
+  );
+}
+
+function PlayPause(): JSX.Element {
+  const [store, { setPlaying }] = useRepository();
+
+  return (
+    <Button label={store.isPlaying ? "Pause" : "Play"} onClick={setPlaying} />
+  );
+}
+
+function PlaySpeed(): JSX.Element {
+  const [store, { setPlaySpeed }] = useRepository();
+
+  return (
+    <Button
+      label={`Speed: ${store.playSpeed} commit/second`}
+      onClick={setPlaySpeed}
+    />
   );
 }
 
@@ -88,8 +90,8 @@ function Controls(): JSX.Element {
     <div class="py-2 w-full fixed bg-white">
       <OpenRepository />
       <Button label="Branch: main" />
-      <Button label="Play/Pause" />
-      <Button label="Speed: 1 commit/second" />
+      <PlayPause />
+      <PlaySpeed />
     </div>
   );
 }
