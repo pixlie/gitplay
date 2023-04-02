@@ -1,6 +1,5 @@
-import { createSignal, useContext } from "solid-js";
+import { Component, createSignal } from "solid-js";
 import type { JSX } from "solid-js";
-import { invoke } from "@tauri-apps/api/tauri";
 
 import { useRepository } from "../repository";
 
@@ -9,7 +8,7 @@ interface IButtonPropTypes {
   onClick?: JSX.EventHandler<HTMLButtonElement, MouseEvent>;
 }
 
-function Button(props: IButtonPropTypes): JSX.Element {
+const Button: Component<IButtonPropTypes> = (props: IButtonPropTypes) => {
   return (
     <button
       class="p-1.5 px-4 mx-2 rounded-md border-gray-300 bg-white border hover:shadow-sm hover:bg-gray-500 hover:text-white"
@@ -18,10 +17,14 @@ function Button(props: IButtonPropTypes): JSX.Element {
       {props.label}
     </button>
   );
+};
+
+interface IRepositoryFormPropTypes {
+  setToggle: (value: boolean) => void;
 }
 
-function RepositoryForm({ setToggle }): JSX.Element {
-  const [store, { setRepositoryPath, setCommits }] = useRepository();
+const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
+  const [store, { setRepositoryPath, openRepository }] = useRepository();
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (
     event
@@ -30,9 +33,8 @@ function RepositoryForm({ setToggle }): JSX.Element {
   };
 
   const handleSave = () => {
-    invoke("open_repository", { path: store.repositoryPath }).then(setCommits);
-
-    setToggle(false);
+    openRepository();
+    props.setToggle(false);
   };
 
   return (
@@ -46,9 +48,9 @@ function RepositoryForm({ setToggle }): JSX.Element {
       <Button label="Open" onClick={handleSave} />
     </>
   );
-}
+};
 
-function OpenRepository(): JSX.Element {
+const OpenRepository: Component = () => {
   const [toggle, setToggle] = createSignal<boolean>(false);
 
   const handleClick = () => {
@@ -64,17 +66,17 @@ function OpenRepository(): JSX.Element {
       )}
     </>
   );
-}
+};
 
-function PlayPause(): JSX.Element {
+const PlayPause: Component = () => {
   const [store, { setPlaying }] = useRepository();
 
   return (
     <Button label={store.isPlaying ? "Pause" : "Play"} onClick={setPlaying} />
   );
-}
+};
 
-function PlaySpeed(): JSX.Element {
+const PlaySpeed: Component = () => {
   const [store, { setPlaySpeed }] = useRepository();
 
   return (
@@ -83,9 +85,9 @@ function PlaySpeed(): JSX.Element {
       onClick={setPlaySpeed}
     />
   );
-}
+};
 
-function Controls(): JSX.Element {
+const Controls: Component = () => {
   return (
     <div class="py-3 w-full fixed bg-gray-100 border-b-gray-200 border">
       <OpenRepository />
@@ -94,6 +96,6 @@ function Controls(): JSX.Element {
       <PlaySpeed />
     </div>
   );
-}
+};
 
 export default Controls;

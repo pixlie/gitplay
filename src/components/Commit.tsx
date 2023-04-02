@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 import { useRepository } from "../repository";
 
 interface IPropTypes {
@@ -6,13 +8,22 @@ interface IPropTypes {
   isCurrent?: boolean;
 }
 
-function Commit({ commitId, commitMessage, isCurrent }: IPropTypes) {
+function Commit(props: IPropTypes) {
+  const [_, { setCurrentCommitId }] = useRepository();
+
+  const handleClick: JSX.EventHandler<HTMLDivElement, MouseEvent> = () => {
+    setCurrentCommitId(props.commitId);
+  };
+
   const className =
     "py-1 px-4 cursor-pointer hover:bg-gray-200 whitespace-nowrap overflow-hidden";
 
   return (
-    <div class={`${className}${isCurrent ? " bg-gray-300" : ""}`}>
-      {commitMessage}
+    <div
+      class={`${className}${props.isCurrent ? " bg-gray-300" : ""}`}
+      onClick={handleClick}
+    >
+      {props.commitMessage}
     </div>
   );
 }
