@@ -1,12 +1,8 @@
 import { Component, onMount } from "solid-js";
-import { useRepository } from "../repository";
+import { useRepository } from "../stores/repository";
 
 const FileViewer: Component = () => {
-  const [store, { play }] = useRepository();
-
-  onMount(() => {
-    play();
-  });
+  const [store] = useRepository();
 
   return (
     <>

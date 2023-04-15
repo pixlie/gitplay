@@ -3,7 +3,7 @@ import { Component, createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
-import { APIRepositoryResponse } from "./apiTypes";
+import { APIRepositoryResponse } from "../apiTypes";
 
 interface IFileBlob {
   objectId: string;
@@ -56,7 +56,6 @@ const makeRepository = (
       },
 
       openRepository() {
-        // console.log(response[0]);
         invoke("open_repository", { path: store.repositoryPath }).then(
           (response) => {
             setStore((state) => ({
@@ -80,39 +79,44 @@ const makeRepository = (
         setStore("currentCommitId", commitId);
       },
 
-      setPlaying() {
-        setStore("isPlaying", (isPlaying) => !isPlaying);
-      },
-
       setPlaySpeed() {
         setStore("playSpeed", (playSpeed) =>
           playSpeed < 8 ? playSpeed + 1 : 1
         );
       },
 
-      play() {
+      nextCommit() {
         if (!store.commits) {
           return;
         }
 
         let keys = Object.keys(store.commits);
         let nextCommitId = "";
+
         if (store.currentCommitId) {
           let index = keys.findIndex((x) => x === store.currentCommitId);
           if (index + 1 < keys.length) {
             nextCommitId = keys[index + 1];
+          } else {
+            setStore("isPlaying", false);
+            return;
           }
         } else {
           nextCommitId = keys[0];
         }
 
         setStore("currentCommitId", nextCommitId);
+        setStore("isPlaying", true);
         invoke("read_commit", {
           path: store.repositoryPath,
           commitId: nextCommitId,
         }).then((response) => {
           console.log(response);
         });
+      },
+
+      pause() {
+        setStore("isPlaying", false);
       },
     },
   ] as const; // `as const` forces tuple type inference

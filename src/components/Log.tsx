@@ -1,6 +1,6 @@
 import { Component } from "solid-js";
 
-import { useRepository } from "../repository";
+import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
 
 const Log: Component = () => {

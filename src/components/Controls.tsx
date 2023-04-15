@@ -1,7 +1,7 @@
-import { Component, createSignal } from "solid-js";
+import { Component, createEffect, createSignal } from "solid-js";
 import type { JSX } from "solid-js";
 
-import { useRepository } from "../repository";
+import { useRepository } from "../stores/repository";
 
 interface IButtonPropTypes {
   label: string;
@@ -69,10 +69,30 @@ const OpenRepository: Component = () => {
 };
 
 const PlayPause: Component = () => {
-  const [store, { setPlaying }] = useRepository();
+  const [store, { nextCommit, pause }] = useRepository();
+  const [intervalId, setIntervalId] =
+    createSignal<ReturnType<typeof setInterval>>();
+
+  const handlePlayPause = () => {
+    if (store.isPlaying) {
+      pause();
+    } else {
+      nextCommit();
+      setIntervalId(setInterval(nextCommit, 1000 / store.playSpeed));
+    }
+  };
+
+  createEffect(() => {
+    if (!store.isPlaying && intervalId()) {
+      clearInterval(intervalId());
+    }
+  });
 
   return (
-    <Button label={store.isPlaying ? "Pause" : "Play"} onClick={setPlaying} />
+    <Button
+      label={store.isPlaying ? "Pause" : "Play"}
+      onClick={handlePlayPause}
+    />
   );
 };
 

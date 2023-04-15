@@ -1,6 +1,6 @@
 import type { JSX } from "solid-js";
 
-import { useRepository } from "../repository";
+import { useRepository } from "../stores/repository";
 
 interface IPropTypes {
   commitId: string;

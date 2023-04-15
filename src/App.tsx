@@ -3,7 +3,7 @@ import { Component } from "solid-js";
 import Controls from "./components/Controls";
 import FileViewer from "./components/FileViewer";
 import Log from "./components/Log";
-import { RepositoryProvider } from "./repository";
+import { RepositoryProvider } from "./stores/repository";
 
 const App: Component = () => {
   return (
