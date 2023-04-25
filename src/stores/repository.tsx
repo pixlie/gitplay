@@ -3,26 +3,12 @@ import { Component, createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
-import { APIRepositoryResponse } from "../apiTypes";
-
-interface IFileBlob {
-  objectId: string;
-  name: string;
-  isDirectory: boolean;
-}
-
-interface IFileTree {
-  objectId: string;
-  blobs: {
-    [objectId: string]: IFileBlob;
-  };
-}
-
-interface ICommitFrame {
-  commitId: string;
-  commitMessage: string;
-  fileTree?: IFileTree;
-}
+import {
+  APIRepositoryResponse,
+  ICommitFrame,
+  isIAPICommitFrame,
+} from "../apiTypes";
+import { log } from "console";
 
 interface IStore {
   currentBranch?: string;
@@ -107,11 +93,36 @@ const makeRepository = (
 
         setStore("currentCommitId", nextCommitId);
         setStore("isPlaying", true);
+
         invoke("read_commit", {
           path: store.repositoryPath,
           commitId: nextCommitId,
         }).then((response) => {
-          console.log(response);
+          if (isIAPICommitFrame(response)) {
+            setStore("commits", (commits) => ({
+              ...commits,
+              [nextCommitId]: {
+                commitId: response.commit_id,
+                commitMessage: response.commit_message,
+                fileTree: !!response.file_structure
+                  ? {
+                      objectId: response.file_structure.object_id,
+                      blobs: response.file_structure.blobs.reduce(
+                        (blobs, x) => ({
+                          ...blobs,
+                          [x.object_id]: {
+                            objectId: x.object_id,
+                            name: x.name,
+                            isDirectory: x.is_directory,
+                          },
+                        }),
+                        {}
+                      ),
+                    }
+                  : undefined,
+              },
+            }));
+          }
         });
       },
 
