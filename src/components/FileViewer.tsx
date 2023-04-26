@@ -73,26 +73,14 @@ const FileTreeViewer: Component<IFileTree> = (props: IFileTree) => {
 
 const FileViewer: Component = () => {
   const [store] = useRepository();
-  const [fileTree, setFileTree] = createSignal<IFileTree>();
-
-  createEffect(() => {
-    setFileTree(
-      "commits" in store &&
-        store.commits &&
-        store.currentCommitId &&
-        store.currentCommitId in store.commits
-        ? store.commits[store.currentCommitId].fileTree
-        : undefined
-    );
-  });
 
   return (
     <>
       <h1 class="pl-4 pt-1.5 pb-2 text-xl font-bold">File browser</h1>
-      {fileTree() !== undefined && (
+      {!!store.currentFileTree && (
         <FileTreeViewer
-          objectId={fileTree().objectId}
-          blobs={fileTree().blobs}
+          objectId={store.currentFileTree.objectId}
+          blobs={store.currentFileTree.blobs}
         />
       )}
     </>

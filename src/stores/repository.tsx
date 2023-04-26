@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api";
 import {
   APIRepositoryResponse,
   ICommitFrame,
+  IFileTree,
   isIAPICommitFrame,
 } from "../apiTypes";
 import { log } from "console";
@@ -14,6 +15,7 @@ interface IStore {
   currentBranch?: string;
   currentCommitId?: string;
   currentObjectId?: string;
+  currentFileTree?: IFileTree;
   playSpeed: number;
   isPlaying: boolean;
   repositoryPath?: string;
@@ -91,36 +93,45 @@ const makeRepository = (
           nextCommitId = keys[0];
         }
 
-        setStore("currentCommitId", nextCommitId);
-        setStore("isPlaying", true);
+        setStore((state) => ({
+          ...state,
+          currentCommitId: nextCommitId,
+          isPlaying: true,
+        }));
 
         invoke("read_commit", {
           path: store.repositoryPath,
           commitId: nextCommitId,
         }).then((response) => {
           if (isIAPICommitFrame(response)) {
-            setStore("commits", (commits) => ({
-              ...commits,
-              [nextCommitId]: {
-                commitId: response.commit_id,
-                commitMessage: response.commit_message,
-                fileTree: !!response.file_structure
-                  ? {
-                      objectId: response.file_structure.object_id,
-                      blobs: response.file_structure.blobs.reduce(
-                        (blobs, x) => ({
-                          ...blobs,
-                          [x.object_id]: {
-                            objectId: x.object_id,
-                            name: x.name,
-                            isDirectory: x.is_directory,
-                          },
-                        }),
-                        {}
-                      ),
-                    }
-                  : undefined,
+            const fileTree = !!response.file_structure
+              ? {
+                  objectId: response.file_structure.object_id,
+                  blobs: response.file_structure.blobs.reduce(
+                    (blobs, x) => ({
+                      ...blobs,
+                      [x.object_id]: {
+                        objectId: x.object_id,
+                        name: x.name,
+                        isDirectory: x.is_directory,
+                      },
+                    }),
+                    {}
+                  ),
+                }
+              : undefined;
+
+            setStore((state) => ({
+              ...state,
+              commits: {
+                ...state.commits,
+                [nextCommitId]: {
+                  commitId: response.commit_id,
+                  commitMessage: response.commit_message,
+                  fileTree,
+                },
               },
+              currentFileTree: fileTree,
             }));
           }
         });
