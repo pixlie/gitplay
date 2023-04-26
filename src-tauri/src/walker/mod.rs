@@ -51,6 +51,7 @@ pub fn walk_repository_from_head(
             walkable.push_head().unwrap();
             walkable.set_sorting(Sort::TOPOLOGICAL).unwrap();
             walkable.set_sorting(Sort::TIME).unwrap();
+            walkable.set_sorting(Sort::REVERSE).unwrap();
 
             for commit in walkable {
                 match commit {
