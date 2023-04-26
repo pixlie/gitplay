@@ -28,6 +28,43 @@ interface IRepositoryProviderPropTypes {
   children: JSX.Element;
 }
 
+const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
+  new Promise((resolve, reject) => {
+    invoke("read_commit", {
+      path,
+      commitId,
+    })
+      .then((response) => {
+        if (isIAPICommitFrame(response)) {
+          const fileTree = !!response.file_structure
+            ? {
+                objectId: response.file_structure.object_id,
+                blobs: response.file_structure.blobs.reduce(
+                  (blobs, x) => ({
+                    ...blobs,
+                    [x.object_id]: {
+                      objectId: x.object_id,
+                      name: x.name,
+                      isDirectory: x.is_directory,
+                    },
+                  }),
+                  {}
+                ),
+              }
+            : undefined;
+
+          resolve({
+            commitId: response.commit_id,
+            commitMessage: response.commit_message,
+            fileTree,
+          });
+        }
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+
 const makeRepository = (
   defaultStore: IStore = {
     playSpeed: 1,
@@ -64,7 +101,42 @@ const makeRepository = (
       },
 
       setCurrentCommitId(commitId: string) {
-        setStore("currentCommitId", commitId);
+        if (
+          !store.commits ||
+          !Object.keys(store.commits).length ||
+          !store.repositoryPath
+        ) {
+          return;
+        }
+
+        setStore((state) => ({
+          ...state,
+          currentCommitId: commitId,
+          currentFileTree: undefined,
+          isPlaying: false,
+        }));
+
+        if (
+          commitId in Object.keys(store.commits) &&
+          "fileTree" in store.commits[commitId] &&
+          !!store.commits[commitId].fileTree
+        ) {
+          setStore((state) => ({
+            ...state,
+            currentFileTree: store.commits[commitId].fileTree,
+          }));
+        } else {
+          getCommit(store.repositoryPath, commitId).then((response) => {
+            setStore((state) => ({
+              ...state,
+              commits: {
+                ...state.commits,
+                [commitId]: response,
+              },
+              currentFileTree: response.fileTree,
+            }));
+          });
+        }
       },
 
       setPlaySpeed() {
@@ -74,7 +146,11 @@ const makeRepository = (
       },
 
       nextCommit() {
-        if (!store.commits) {
+        if (
+          !store.commits ||
+          !Object.keys(store.commits).length ||
+          !store.repositoryPath
+        ) {
           return;
         }
 
@@ -99,41 +175,15 @@ const makeRepository = (
           isPlaying: true,
         }));
 
-        invoke("read_commit", {
-          path: store.repositoryPath,
-          commitId: nextCommitId,
-        }).then((response) => {
-          if (isIAPICommitFrame(response)) {
-            const fileTree = !!response.file_structure
-              ? {
-                  objectId: response.file_structure.object_id,
-                  blobs: response.file_structure.blobs.reduce(
-                    (blobs, x) => ({
-                      ...blobs,
-                      [x.object_id]: {
-                        objectId: x.object_id,
-                        name: x.name,
-                        isDirectory: x.is_directory,
-                      },
-                    }),
-                    {}
-                  ),
-                }
-              : undefined;
-
-            setStore((state) => ({
-              ...state,
-              commits: {
-                ...state.commits,
-                [nextCommitId]: {
-                  commitId: response.commit_id,
-                  commitMessage: response.commit_message,
-                  fileTree,
-                },
-              },
-              currentFileTree: fileTree,
-            }));
-          }
+        getCommit(store.repositoryPath, nextCommitId).then((response) => {
+          setStore((state) => ({
+            ...state,
+            commits: {
+              ...state.commits,
+              [nextCommitId]: response,
+            },
+            currentFileTree: response.fileTree,
+          }));
         });
       },
 
