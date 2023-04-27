@@ -1,4 +1,4 @@
-use git2::{Commit, ObjectType, Repository, Sort};
+use git2::{Commit, ObjectType, Repository, Sort, TreeWalkResult};
 use serde::Serialize;
 
 /*
@@ -25,6 +25,7 @@ struct FileBlob {
     object_id: String,
     name: String,
     is_directory: bool,
+    file_tree: Option<FileTree>,
 }
 
 // pub fn load_repository(path: &String) -> Repository {
@@ -113,16 +114,25 @@ fn get_tree(commit: &Commit) -> Option<FileTree> {
     match commit.tree() {
         Ok(tree) => {
             let mut blobs: Vec<FileBlob> = Vec::new();
-            for item in tree.iter() {
+            tree.walk(git2::TreeWalkMode::PreOrder, |_, item| {
                 match item.kind() {
                     Some(ObjectType::Blob) => blobs.push(FileBlob {
                         object_id: item.id().to_string(),
                         name: item.name().unwrap().to_string(),
                         is_directory: false,
+                        file_tree: None,
+                    }),
+                    Some(ObjectType::Tree) => blobs.push(FileBlob {
+                        object_id: item.id().to_string(),
+                        name: item.name().unwrap().to_string(),
+                        is_directory: true,
+                        file_tree: None,
                     }),
                     _ => {}
                 }
-            }
+                TreeWalkResult::Ok
+            })
+            .unwrap();
             Some(FileTree {
                 object_id: tree.id().to_string(),
                 blobs,

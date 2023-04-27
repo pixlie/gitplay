@@ -61,6 +61,10 @@ const FileTreeViewer: Component = () => {
   const getFileBlobs = createMemo(() => {
     if (store.currentCommitId) {
       const fileTree = getFileTree(store.currentCommitId);
+      console.log(
+        !!fileTree && Object.values(fileTree.blobs).filter((x) => x.isDirectory)
+      );
+
       return !!fileTree ? fileTree.blobs : {};
     }
     return {};

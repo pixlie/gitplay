@@ -7,7 +7,7 @@ use tauri::{self};
 mod walker;
 
 #[tauri::command]
-fn open_repository(
+fn read_repository(
     path: &str,
     after_commit_id: Option<&str>,
 ) -> Result<Vec<(String, String)>, String> {
@@ -30,7 +30,7 @@ fn read_commit(path: &str, commit_id: &str) -> Result<walker::CommitFrame, Strin
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![open_repository, read_commit])
+        .invoke_handler(tauri::generate_handler![read_repository, read_commit])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

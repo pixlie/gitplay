@@ -27,6 +27,7 @@ interface IFileBlob {
   objectId: string;
   name: string;
   isDirectory: boolean;
+  fileTree?: IFileTree;
 }
 
 interface IFileTree {
