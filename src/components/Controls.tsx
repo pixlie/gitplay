@@ -11,7 +11,7 @@ interface IButtonPropTypes {
 const Button: Component<IButtonPropTypes> = (props: IButtonPropTypes) => {
   return (
     <button
-      class="p-1.5 px-4 mx-2 rounded-md border-gray-300 bg-white border hover:shadow-sm hover:bg-gray-500 hover:text-white"
+      class="p-1.5 px-4 mx-2 rounded-md border-gray-300 border bg-white hover:shadow-sm hover:bg-gray-500 hover:text-white"
       onClick={props.onClick}
     >
       {props.label}
@@ -41,7 +41,7 @@ const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
     <>
       <input
         type="text"
-        class="p-2 px-4 rounded-md border-gray-100 border"
+        class="p-1.5 px-2 mx-2 rounded-md border-gray-300 border"
         value={store.repositoryPath || ""}
         onInput={handleInput}
       />
@@ -50,7 +50,7 @@ const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
   );
 };
 
-const OpenRepository: Component = () => {
+const OpenRepositoryButton: Component = () => {
   const [toggle, setToggle] = createSignal<boolean>(false);
 
   const handleClick = () => {
@@ -109,8 +109,8 @@ const PlaySpeed: Component = () => {
 
 const Controls: Component = () => {
   return (
-    <div class="py-3 w-full fixed bg-gray-100 border-b-gray-200 border">
-      <OpenRepository />
+    <div class="py-3 w-full fixed bg-gray-100 border-b-gray-200 border z-10">
+      <OpenRepositoryButton />
       <Button label="Branch: main" />
       <PlayPause />
       <PlaySpeed />

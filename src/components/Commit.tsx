@@ -15,14 +15,15 @@ function Commit(props: IPropTypes) {
     setCurrentCommitId(props.commitId);
   };
 
-  const className =
-    "py-1 px-4 cursor-pointer hover:bg-gray-200 whitespace-nowrap overflow-hidden";
+  let className = "py-1 px-4 cursor-pointer whitespace-nowrap overflow-hidden";
+  if (props.isCurrent) {
+    className = `${className} bg-gray-300`;
+  } else {
+    className = `${className} hover:bg-gray-200`;
+  }
 
   return (
-    <div
-      class={`${className}${props.isCurrent ? " bg-gray-300" : ""}`}
-      onClick={handleClick}
-    >
+    <div class={className} onClick={handleClick}>
       {props.commitMessage}
     </div>
   );

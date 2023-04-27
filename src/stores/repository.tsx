@@ -9,17 +9,15 @@ import {
   IFileTree,
   isIAPICommitFrame,
 } from "../apiTypes";
-import { log } from "console";
 
 interface IStore {
   currentBranch?: string;
   currentCommitId?: string;
   currentObjectId?: string;
-  currentFileTree?: IFileTree;
   playSpeed: number;
   isPlaying: boolean;
   repositoryPath?: string;
-  commits?: {
+  commits: {
     [commitId: string]: ICommitFrame;
   };
 }
@@ -69,6 +67,7 @@ const makeRepository = (
   defaultStore: IStore = {
     playSpeed: 1,
     isPlaying: false,
+    commits: {},
   }
 ) => {
   const [store, setStore] = createStore<IStore>(defaultStore);
@@ -81,7 +80,7 @@ const makeRepository = (
       },
 
       openRepository() {
-        invoke("open_repository", { path: store.repositoryPath }).then(
+        invoke("read_repository", { path: store.repositoryPath }).then(
           (response) => {
             setStore((state) => ({
               ...state,
@@ -101,31 +100,24 @@ const makeRepository = (
       },
 
       setCurrentCommitId(commitId: string) {
-        if (
-          !store.commits ||
-          !Object.keys(store.commits).length ||
-          !store.repositoryPath
-        ) {
+        if (!store.repositoryPath || !(commitId in store.commits)) {
           return;
         }
 
-        setStore((state) => ({
-          ...state,
-          currentCommitId: commitId,
-          currentFileTree: undefined,
-          isPlaying: false,
-        }));
-
         if (
-          commitId in Object.keys(store.commits) &&
+          commitId in store.commits &&
           "fileTree" in store.commits[commitId] &&
           !!store.commits[commitId].fileTree
         ) {
+          console.log("existing fileTree");
           setStore((state) => ({
             ...state,
-            currentFileTree: store.commits[commitId].fileTree,
+            currentCommitId: commitId,
+            isPlaying: false,
           }));
         } else {
+          console.log("fetching fileTree for ", commitId);
+
           getCommit(store.repositoryPath, commitId).then((response) => {
             setStore((state) => ({
               ...state,
@@ -133,7 +125,8 @@ const makeRepository = (
                 ...state.commits,
                 [commitId]: response,
               },
-              currentFileTree: response.fileTree,
+              currentCommitId: commitId,
+              isPlaying: false,
             }));
           });
         }
@@ -141,7 +134,7 @@ const makeRepository = (
 
       setPlaySpeed() {
         setStore("playSpeed", (playSpeed) =>
-          playSpeed < 8 ? playSpeed + 1 : 1
+          playSpeed < 16 ? playSpeed * 2 : 1
         );
       },
 
@@ -182,13 +175,28 @@ const makeRepository = (
               ...state.commits,
               [nextCommitId]: response,
             },
-            currentFileTree: response.fileTree,
           }));
         });
       },
 
       pause() {
         setStore("isPlaying", false);
+      },
+
+      getFileTree(): IFileTree | undefined {
+        if (!store.currentCommitId) {
+          return undefined;
+        }
+        const commitId = store.currentCommitId;
+
+        if (
+          "fileTree" in store.commits[commitId] &&
+          !!store.commits[commitId].fileTree
+        ) {
+          return store.commits[commitId].fileTree;
+        }
+
+        return undefined;
       },
     },
   ] as const; // `as const` forces tuple type inference

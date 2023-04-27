@@ -12,11 +12,11 @@ const App: Component = () => {
         <>
           <Controls />
 
-          <div class="container flex pt-16">
+          <div class="container flex pt-16 h-screen w-screen overflow-hidden">
             <div class="w-64">
               <Log />
             </div>
-            <div class="grow">
+            <div>
               <FileViewer />
             </div>
           </div>

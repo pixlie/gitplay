@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal } from "solid-js";
+import { Component, createEffect, createSignal, on } from "solid-js";
 
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
@@ -38,7 +38,7 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
   }
 
   return (
-    <div class="p-2 m-2 w-24 flex flex-col overflow-hidden hover:overflow-visible">
+    <div class="p-2 m-2 flex flex-col overflow-hidden hover:overflow-visible">
       <div class="self-center">
         <img
           src={thumbIcon}
@@ -51,38 +51,42 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
   );
 };
 
-const FileTreeViewer: Component<IFileTree> = (props: IFileTree) => {
+const FileTreeViewer: Component = () => {
+  const [store, { getFileTree }] = useRepository();
+  const [fileTree, setFileTree] = createSignal<IFileTree>();
+
+  createEffect(() => {
+    setFileTree(getFileTree());
+  });
+
   return (
-    <div class="p-8">
-      {props.blobs ? (
-        <div class="grid grid-flow-col gap-10">
-          {Object.values(props.blobs).map((x) => (
+    <>
+      <span class="px-4 text-gray-400 text-sm">
+        Commit hash: {store.currentCommitId}
+      </span>
+      <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-4 pl-2">
+        {!!fileTree() && fileTree().blobs ? (
+          Object.values(fileTree().blobs).map((x) => (
             <FileBlobViewer
               objectId={x.objectId}
               name={x.name}
               isDirectory={x.isDirectory}
             />
-          ))}
-        </div>
-      ) : (
-        <></>
-      )}
-    </div>
+          ))
+        ) : (
+          <></>
+        )}
+      </div>
+    </>
   );
 };
 
 const FileViewer: Component = () => {
-  const [store] = useRepository();
-
   return (
     <>
       <h1 class="pl-4 pt-1.5 pb-2 text-xl font-bold">File browser</h1>
-      {!!store.currentFileTree && (
-        <FileTreeViewer
-          objectId={store.currentFileTree.objectId}
-          blobs={store.currentFileTree.blobs}
-        />
-      )}
+
+      <FileTreeViewer />
     </>
   );
 };
