@@ -11,7 +11,7 @@ interface IButtonPropTypes {
 const Button: Component<IButtonPropTypes> = (props: IButtonPropTypes) => {
   return (
     <button
-      class="p-1.5 px-4 mx-2 text-sm rounded-md border-gray-300 border bg-white hover:shadow-sm hover:bg-gray-500 hover:text-white"
+      class="p-1 px-4 mx-2 text-sm rounded-md border-gray-300 border bg-white hover:shadow-sm hover:bg-gray-500 hover:text-white"
       onClick={props.onClick}
     >
       {props.label}
@@ -109,7 +109,7 @@ const PlaySpeed: Component = () => {
 
 const Controls: Component = () => {
   return (
-    <div class="py-3 w-full fixed bg-gray-100 border-b-gray-200 border z-10">
+    <div class="py-3 w-full bg-gray-100 border-b-gray-200 border z-10">
       <OpenRepositoryButton />
       <Button label="Branch: main" />
       <PlayPause />

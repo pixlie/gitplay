@@ -8,11 +8,10 @@ import {
 
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
-import MarkdownIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/brands/markdown.svg";
 import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 
 import { useRepository } from "../stores/repository";
-import { IFileBlob, IFileTree } from "../apiTypes";
+import { IFileBlob } from "../apiTypes";
 
 const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
   let thumbIcon = FileIcon;
@@ -28,6 +27,7 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
     "cpp",
     "c",
     "rb",
+    "md",
   ];
 
   if (props.isDirectory) {
@@ -38,19 +38,17 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
         .length
     ) {
       thumbIcon = CodeIcon;
-    } else if (props.name.endsWith(".md")) {
-      thumbIcon = MarkdownIcon;
     }
   }
 
   return (
-    <div class="flex flex-col">
+    <div class="flex flex-row w-full py-2 border-b">
       <img
         src={thumbIcon}
         alt="File icon"
-        class="opacity-30 hover:opacity-50"
+        class="px-2 h-6 opacity-30 hover:opacity-50"
       />
-      <div class="text-center text-sm">{props.name}</div>
+      <div class="px-2 text-sm flex-1">{props.name}</div>
     </div>
   );
 };
@@ -76,22 +74,34 @@ const FileTreeViewer: Component = () => {
   });
 
   return (
-    <div class="px-4">
+    <div class="px-4 w-full">
       {store.currentCommitId && (
         <div class="text-gray-400 text-sm mb-4">
           Commit hash: {store.currentCommitId}
         </div>
       )}
 
-      <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-4">
-        {getFileBlobs().map((x) => (
-          <FileBlobViewer
-            objectId={x.objectId}
-            rootId={x.rootId}
-            name={x.name}
-            isDirectory={x.isDirectory}
-          />
-        ))}
+      <div class="border border-gray-200">
+        {getFileBlobs()
+          .filter((x) => x.isDirectory)
+          .map((x) => (
+            <FileBlobViewer
+              objectId={x.objectId}
+              rootId={x.rootId}
+              name={x.name}
+              isDirectory={x.isDirectory}
+            />
+          ))}
+        {getFileBlobs()
+          .filter((x) => !x.isDirectory)
+          .map((x) => (
+            <FileBlobViewer
+              objectId={x.objectId}
+              rootId={x.rootId}
+              name={x.name}
+              isDirectory={x.isDirectory}
+            />
+          ))}
       </div>
     </div>
   );

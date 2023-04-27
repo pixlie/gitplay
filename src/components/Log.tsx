@@ -8,7 +8,7 @@ const Log: Component = () => {
 
   return (
     <div class="border-gray-200 border-r-2 flex flex-col overflow-hidden h-full">
-      <h1 class="pl-4 pt-1.5 pb-2 text-xl text-gray-600">Commits</h1>
+      <h1 class="pl-4 pt-1.5 pb-2 text-xl text-gray-600 shadow-md">Commits</h1>
 
       <div class="overflow-auto">
         {Object.entries(store.commits).map(([commitId, commit]) => (
