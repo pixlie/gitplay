@@ -104,20 +104,16 @@ const makeRepository = (
           return;
         }
 
-        if (
-          commitId in store.commits &&
-          "fileTree" in store.commits[commitId] &&
-          !!store.commits[commitId].fileTree
-        ) {
-          console.log("existing fileTree");
-          setStore((state) => ({
-            ...state,
-            currentCommitId: commitId,
-            isPlaying: false,
-          }));
-        } else {
-          console.log("fetching fileTree for ", commitId);
+        setStore((state) => ({
+          ...state,
+          currentCommitId: commitId,
+          isPlaying: false,
+        }));
 
+        if (
+          !("fileTree" in store.commits[commitId]) ||
+          !store.commits[commitId].fileTree
+        ) {
           getCommit(store.repositoryPath, commitId).then((response) => {
             setStore((state) => ({
               ...state,
@@ -183,12 +179,7 @@ const makeRepository = (
         setStore("isPlaying", false);
       },
 
-      getFileTree(): IFileTree | undefined {
-        if (!store.currentCommitId) {
-          return undefined;
-        }
-        const commitId = store.currentCommitId;
-
+      getFileTree(commitId: string): IFileTree | undefined {
         if (
           "fileTree" in store.commits[commitId] &&
           !!store.commits[commitId].fileTree

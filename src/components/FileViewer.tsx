@@ -1,4 +1,10 @@
-import { Component, createEffect, createSignal, on } from "solid-js";
+import {
+  Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  on,
+} from "solid-js";
 
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
@@ -38,53 +44,53 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
   }
 
   return (
-    <div class="p-2 m-2 flex flex-col overflow-hidden hover:overflow-visible">
-      <div class="self-center">
-        <img
-          src={thumbIcon}
-          alt="File icon"
-          class="opacity-30 h-40 hover:opacity-50"
-        />
-      </div>
-      <div class="text-center">{props.name}</div>
+    <div class="flex flex-col">
+      <img
+        src={thumbIcon}
+        alt="File icon"
+        class="opacity-30 hover:opacity-50"
+      />
+      <div class="text-center text-sm">{props.name}</div>
     </div>
   );
 };
 
 const FileTreeViewer: Component = () => {
   const [store, { getFileTree }] = useRepository();
-  const [fileTree, setFileTree] = createSignal<IFileTree>();
 
-  createEffect(() => {
-    setFileTree(getFileTree());
+  const getFileBlobs = createMemo(() => {
+    if (store.currentCommitId) {
+      const fileTree = getFileTree(store.currentCommitId);
+      return !!fileTree ? fileTree.blobs : {};
+    }
+    return {};
   });
 
   return (
-    <>
-      <span class="px-4 text-gray-400 text-sm">
-        Commit hash: {store.currentCommitId}
-      </span>
-      <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-4 pl-2">
-        {!!fileTree() && fileTree().blobs ? (
-          Object.values(fileTree().blobs).map((x) => (
-            <FileBlobViewer
-              objectId={x.objectId}
-              name={x.name}
-              isDirectory={x.isDirectory}
-            />
-          ))
-        ) : (
-          <></>
-        )}
+    <div class="px-4">
+      {store.currentCommitId && (
+        <div class="text-gray-400 text-sm mb-4">
+          Commit hash: {store.currentCommitId}
+        </div>
+      )}
+
+      <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-4">
+        {Object.values(getFileBlobs()).map((x) => (
+          <FileBlobViewer
+            objectId={x.objectId}
+            name={x.name}
+            isDirectory={x.isDirectory}
+          />
+        ))}
       </div>
-    </>
+    </div>
   );
 };
 
 const FileViewer: Component = () => {
   return (
     <>
-      <h1 class="pl-4 pt-1.5 pb-2 text-xl font-bold">File browser</h1>
+      <h1 class="pl-4 pt-1.5 pb-2 text-xl text-gray-600">File browser</h1>
 
       <FileTreeViewer />
     </>
