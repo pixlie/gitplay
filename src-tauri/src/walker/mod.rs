@@ -23,9 +23,9 @@ struct FileTree {
 #[derive(Clone, Debug, Serialize)]
 struct FileBlob {
     object_id: String,
+    root_id: String,
     name: String,
     is_directory: bool,
-    file_tree: Option<FileTree>,
 }
 
 // pub fn load_repository(path: &String) -> Repository {
@@ -114,19 +114,19 @@ fn get_tree(commit: &Commit) -> Option<FileTree> {
     match commit.tree() {
         Ok(tree) => {
             let mut blobs: Vec<FileBlob> = Vec::new();
-            tree.walk(git2::TreeWalkMode::PreOrder, |_, item| {
+            tree.walk(git2::TreeWalkMode::PreOrder, |relative_root, item| {
                 match item.kind() {
                     Some(ObjectType::Blob) => blobs.push(FileBlob {
                         object_id: item.id().to_string(),
+                        root_id: relative_root.to_owned(),
                         name: item.name().unwrap().to_string(),
                         is_directory: false,
-                        file_tree: None,
                     }),
                     Some(ObjectType::Tree) => blobs.push(FileBlob {
                         object_id: item.id().to_string(),
+                        root_id: relative_root.to_owned(),
                         name: item.name().unwrap().to_string(),
                         is_directory: true,
-                        file_tree: None,
                     }),
                     _ => {}
                 }

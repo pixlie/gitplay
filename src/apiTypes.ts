@@ -2,6 +2,7 @@ type APIRepositoryResponse = Array<[string, string]>;
 
 interface IAPIFileBlob {
   object_id: string;
+  root_id: string;
   name: string;
   is_directory: boolean;
 }
@@ -25,16 +26,14 @@ const isIAPICommitFrame = (data: unknown): data is IAPICommitFrame => {
 
 interface IFileBlob {
   objectId: string;
+  rootId: string;
   name: string;
   isDirectory: boolean;
-  fileTree?: IFileTree;
 }
 
 interface IFileTree {
   objectId: string;
-  blobs: {
-    [objectId: string]: IFileBlob;
-  };
+  blobs: Array<IFileBlob>;
 }
 
 interface ICommitFrame {

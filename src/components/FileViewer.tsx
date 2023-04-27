@@ -62,12 +62,17 @@ const FileTreeViewer: Component = () => {
     if (store.currentCommitId) {
       const fileTree = getFileTree(store.currentCommitId);
       console.log(
-        !!fileTree && Object.values(fileTree.blobs).filter((x) => x.isDirectory)
+        !!fileTree &&
+          Object.values(fileTree.blobs)
+            .filter((x) => x.isDirectory)
+            .map((x) => x.rootId)
       );
 
-      return !!fileTree ? fileTree.blobs : {};
+      return !!fileTree
+        ? fileTree.blobs.filter((x) => x.rootId === store.currentPathInFileTree)
+        : [];
     }
-    return {};
+    return [];
   });
 
   return (
@@ -79,9 +84,10 @@ const FileTreeViewer: Component = () => {
       )}
 
       <div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-4">
-        {Object.values(getFileBlobs()).map((x) => (
+        {getFileBlobs().map((x) => (
           <FileBlobViewer
             objectId={x.objectId}
+            rootId={x.rootId}
             name={x.name}
             isDirectory={x.isDirectory}
           />

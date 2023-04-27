@@ -14,6 +14,7 @@ interface IStore {
   currentBranch?: string;
   currentCommitId?: string;
   currentObjectId?: string;
+  currentPathInFileTree?: string;
   playSpeed: number;
   isPlaying: boolean;
   repositoryPath?: string;
@@ -37,17 +38,12 @@ const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
           const fileTree = !!response.file_structure
             ? {
                 objectId: response.file_structure.object_id,
-                blobs: response.file_structure.blobs.reduce(
-                  (blobs, x) => ({
-                    ...blobs,
-                    [x.object_id]: {
-                      objectId: x.object_id,
-                      name: x.name,
-                      isDirectory: x.is_directory,
-                    },
-                  }),
-                  {}
-                ),
+                blobs: response.file_structure.blobs.map((x) => ({
+                  objectId: x.object_id,
+                  rootId: x.root_id,
+                  name: x.name,
+                  isDirectory: x.is_directory,
+                })),
               }
             : undefined;
 
@@ -94,6 +90,7 @@ const makeRepository = (
                 }),
                 {}
               ),
+              currentPathInFileTree: "",
             }));
           }
         );
