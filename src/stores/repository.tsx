@@ -21,6 +21,7 @@ interface IStore {
   commits: {
     [commitId: string]: ICommitFrame;
   };
+  hasRepositoryLoaded?: boolean;
 }
 
 interface IRepositoryProviderPropTypes {
@@ -76,6 +77,15 @@ const makeRepository = (
       },
 
       openRepository() {
+        if (!store.repositoryPath) {
+          return;
+        }
+        setStore((state) => ({
+          ...state,
+          isPlaying: false,
+          hasRepositoryLoaded: false,
+        }));
+
         invoke("read_repository", { path: store.repositoryPath }).then(
           (response) => {
             setStore((state) => ({
@@ -92,6 +102,19 @@ const makeRepository = (
               ),
               currentPathInFileTree: "",
             }));
+
+            const commitId = (response as APIRepositoryResponse)[0][0];
+            getCommit(store.repositoryPath!, commitId).then((response) => {
+              setStore((state) => ({
+                ...state,
+                commits: {
+                  ...state.commits,
+                  [commitId]: response,
+                },
+                currentCommitId: commitId,
+                hasRepositoryLoaded: true,
+              }));
+            });
           }
         );
       },
@@ -174,6 +197,10 @@ const makeRepository = (
 
       pause() {
         setStore("isPlaying", false);
+      },
+
+      setPathInFileTree(path: string) {
+        setStore("currentPathInFileTree", path);
       },
 
       getFileTree(commitId: string): IFileTree | undefined {

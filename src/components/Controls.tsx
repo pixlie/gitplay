@@ -24,7 +24,8 @@ interface IRepositoryFormPropTypes {
 }
 
 const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
-  const [store, { setRepositoryPath, openRepository }] = useRepository();
+  const [store, { setRepositoryPath, openRepository, setCurrentCommitId }] =
+    useRepository();
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (
     event
@@ -41,7 +42,7 @@ const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
     <>
       <input
         type="text"
-        class="p-1.5 px-2 mx-2 text-sm rounded-md border-gray-300 border"
+        class="p-1 px-2 mx-2 text-sm rounded-md border-gray-300 border focus:outline-none focus:bg-yellow-100"
         value={store.repositoryPath || ""}
         onInput={handleInput}
       />
