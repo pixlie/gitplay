@@ -84,6 +84,8 @@ const PlayPause: Component = () => {
   };
 
   createEffect(() => {
+    // Player can be paused from other UI elements, and then when the store changes.
+    // We listen to the store status `isPlaying` and cancel our Interval so the next scene is not called
     if (!store.isPlaying && intervalId()) {
       clearInterval(intervalId());
     }

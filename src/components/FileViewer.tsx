@@ -8,7 +8,7 @@ import { useRepository } from "../stores/repository";
 import { IFileBlob } from "../apiTypes";
 
 const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
-  const [_, { setPathInFileTree }] = useRepository();
+  const [store, { setPathInFileTree, appendPathInFileTree }] = useRepository();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -37,8 +37,27 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
     }
   }
 
+  const handleDirectoryClick = () => {
+    if (props.objectId === "RELATIVE_ROOT_PATH") {
+      // We have to move up the path, so we simply exclude the last part
+      setPathInFileTree(
+        store.currentPathInFileTree.slice(
+          0,
+          store.currentPathInFileTree.length - 1
+        )
+      );
+    } else {
+      appendPathInFileTree(`${props.name}/`);
+    }
+  };
+
+  let handleClick = handleDirectoryClick;
+
   return (
-    <div class="flex flex-row w-full py-2 border-b cursor-pointer hover:bg-gray-100">
+    <div
+      class="flex flex-row w-full py-2 border-b cursor-pointer hover:bg-gray-100"
+      onClick={handleClick}
+    >
       <img
         src={thumbIcon}
         alt="File icon"
@@ -46,7 +65,9 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
       />
       <div
         class={`px-2 text-sm flex-1 ${
-          props.name.startsWith(".") && "text-gray-400"
+          props.name.startsWith(".") &&
+          props.objectId !== "RELATIVE_ROOT_PATH" &&
+          "text-gray-400"
         }`}
       >
         {props.name}
@@ -65,10 +86,29 @@ const FileTreeViewer: Component = () => {
 
   const getFileBlobs = createMemo(() => {
     if (store.currentCommitId) {
+      const parentTree: Array<IFileBlob> = !store.currentPathInFileTree.length
+        ? []
+        : [
+            {
+              isDirectory: true,
+              objectId: "RELATIVE_ROOT_PATH",
+              relativeRootPath: "",
+              name: "..",
+            },
+          ];
       const fileTree = getFileTree(store.currentCommitId);
 
       return !!fileTree
-        ? fileTree.blobs.filter((x) => x.rootId === store.currentPathInFileTree)
+        ? [
+            ...parentTree,
+            ...fileTree.blobs.filter(
+              (x) =>
+                x.relativeRootPath ===
+                (!store.currentPathInFileTree.length
+                  ? ""
+                  : store.currentPathInFileTree.join(""))
+            ),
+          ]
         : [];
     }
     return [];
@@ -102,7 +142,7 @@ const FileTreeViewer: Component = () => {
             .map((x) => (
               <FileBlobViewer
                 objectId={x.objectId}
-                rootId={x.rootId}
+                relativeRootPath={x.relativeRootPath}
                 name={x.name}
                 isDirectory={x.isDirectory}
               />
@@ -112,7 +152,7 @@ const FileTreeViewer: Component = () => {
             .map((x) => (
               <FileBlobViewer
                 objectId={x.objectId}
-                rootId={x.rootId}
+                relativeRootPath={x.relativeRootPath}
                 name={x.name}
                 isDirectory={x.isDirectory}
               />
@@ -124,9 +164,21 @@ const FileTreeViewer: Component = () => {
 };
 
 const FileViewer: Component = () => {
+  const [store] = useRepository();
+
+  const displayCurrentPath = createMemo(() => {
+    return !store.currentPathInFileTree.length
+      ? "Browsing files"
+      : `Browsing files at: ${store.currentPathInFileTree
+          .filter((x) => x !== "")
+          .join("")}`;
+  });
+
   return (
     <>
-      <h1 class="pl-4 pt-1.5 pb-2 text-xl text-gray-600">File browser</h1>
+      <h1 class="pl-4 pt-1.5 pb-2 text-xl text-gray-600">
+        {displayCurrentPath()}
+      </h1>
 
       <FileTreeViewer />
     </>

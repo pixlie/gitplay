@@ -23,7 +23,7 @@ struct FileTree {
 #[derive(Clone, Debug, Serialize)]
 struct FileBlob {
     object_id: String,
-    root_id: String,
+    relative_root_path: String,
     name: String,
     is_directory: bool,
 }
@@ -118,13 +118,13 @@ fn get_tree(commit: &Commit) -> Option<FileTree> {
                 match item.kind() {
                     Some(ObjectType::Blob) => blobs.push(FileBlob {
                         object_id: item.id().to_string(),
-                        root_id: relative_root.to_owned(),
+                        relative_root_path: relative_root.to_owned(),
                         name: item.name().unwrap().to_string(),
                         is_directory: false,
                     }),
                     Some(ObjectType::Tree) => blobs.push(FileBlob {
                         object_id: item.id().to_string(),
-                        root_id: relative_root.to_owned(),
+                        relative_root_path: relative_root.to_owned(),
                         name: item.name().unwrap().to_string(),
                         is_directory: true,
                     }),

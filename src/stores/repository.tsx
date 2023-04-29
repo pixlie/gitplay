@@ -10,11 +10,23 @@ import {
   isIAPICommitFrame,
 } from "../apiTypes";
 
+/**
+ * Main data structure for the UI application.
+ *
+ * We track the current repository (path in local filesystem), current branch, current commit,
+ * play status, path inside the git file tree, list of commits (loaded with pagination),
+ * list of files (loaded per commit visit)
+ *
+ * The data structure is read using `store` variable and then the needed key,
+ * like `store.currentBranch`
+ *
+ * There are setters or modifiers to update the data structure (defined in `makeRepository`)
+ */
 interface IStore {
   currentBranch?: string;
   currentCommitId?: string;
   currentObjectId?: string;
-  currentPathInFileTree?: string;
+  currentPathInFileTree: Array<string>;
   playSpeed: number;
   isPlaying: boolean;
   repositoryPath?: string;
@@ -28,6 +40,14 @@ interface IRepositoryProviderPropTypes {
   children: JSX.Element;
 }
 
+/**
+ * Function to fetch the details for a single commit, generally the file list.
+ * The file list is flat, unlike a tree in Rust code. Each item has its relative path.
+ *
+ * @param path string path to the repository
+ * @param commitId string commit hash
+ * @returns Promise of commit's detail with the file list
+ */
 const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
   new Promise((resolve, reject) => {
     invoke("read_commit", {
@@ -41,7 +61,7 @@ const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
                 objectId: response.file_structure.object_id,
                 blobs: response.file_structure.blobs.map((x) => ({
                   objectId: x.object_id,
-                  rootId: x.root_id,
+                  relativeRootPath: x.relative_root_path,
                   name: x.name,
                   isDirectory: x.is_directory,
                 })),
@@ -60,11 +80,19 @@ const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
       });
   });
 
+/**
+ * Function to create the actual SolidJS store with the IStore data structure and
+ * the setters to modifiers to the data.
+ *
+ * @param defaultStore IStore default values
+ * @returns readly IStore data and the setters/modifiers
+ */
 const makeRepository = (
   defaultStore: IStore = {
     playSpeed: 1,
     isPlaying: false,
     commits: {},
+    currentPathInFileTree: [],
   }
 ) => {
   const [store, setStore] = createStore<IStore>(defaultStore);
@@ -100,7 +128,7 @@ const makeRepository = (
                 }),
                 {}
               ),
-              currentPathInFileTree: "",
+              currentPathInFileTree: [],
             }));
 
             const commitId = (response as APIRepositoryResponse)[0][0];
@@ -199,8 +227,14 @@ const makeRepository = (
         setStore("isPlaying", false);
       },
 
-      setPathInFileTree(path: string) {
+      setPathInFileTree(path: Array<string>) {
         setStore("currentPathInFileTree", path);
+      },
+
+      appendPathInFileTree(path: string) {
+        setStore("currentPathInFileTree", (cp) =>
+          !!cp ? [...cp, path] : [path]
+        );
       },
 
       getFileTree(commitId: string): IFileTree | undefined {
