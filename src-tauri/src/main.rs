@@ -12,8 +12,16 @@ fn read_repository(
     after_commit_id: Option<&str>,
 ) -> Result<Vec<(String, String)>, String> {
     match Repository::open(path) {
-        Ok(repository) => walker::walk_repository_from_head(&repository, &after_commit_id),
+        Ok(repository) => walker::walk_repository(&repository, &after_commit_id),
         Err(_) => Err("Could not load repository".into()),
+    }
+}
+
+#[tauri::command]
+fn commits_count(path: &str) -> Result<u32, String> {
+    match Repository::open(path) {
+        Ok(repository) => walker::get_commits_count(&repository),
+        Err(msg) => Err(msg.to_string()),
     }
 }
 
@@ -30,7 +38,11 @@ fn read_commit(path: &str, commit_id: &str) -> Result<walker::CommitFrame, Strin
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![read_repository, read_commit])
+        .invoke_handler(tauri::generate_handler![
+            read_repository,
+            commits_count,
+            read_commit
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -35,7 +35,7 @@ struct FileBlob {
 //     }
 // }
 
-pub fn walk_repository_from_head(
+pub fn walk_repository(
     repository: &Repository,
     after_commit_id: &Option<&str>,
 ) -> Result<Vec<(String, String)>, String> {
@@ -88,6 +88,26 @@ pub fn walk_repository_from_head(
             Ok(output)
         }
         Err(x) => Err(format!("Could not walk repository: {}", x.message())),
+    }
+}
+
+pub fn get_commits_count(repository: &Repository) -> Result<u32, String> {
+    let walk = repository.revwalk();
+    let mut count: u32 = 0;
+
+    match walk {
+        Ok(mut walkable) => {
+            walkable.push_head().unwrap();
+            walkable.set_sorting(Sort::TOPOLOGICAL).unwrap();
+            walkable.set_sorting(Sort::TIME).unwrap();
+            walkable.set_sorting(Sort::REVERSE).unwrap();
+
+            for _ in walkable {
+                count += 1;
+            }
+            Ok(count)
+        }
+        Err(x) => Err(format!("Could not count: {}", x.message())),
     }
 }
 
