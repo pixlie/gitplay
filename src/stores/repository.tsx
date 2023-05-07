@@ -34,6 +34,7 @@ interface IStore {
     [commitId: string]: ICommitFrame;
   };
   commitsCount?: number;
+  commitIdToFetchAfter?: string;
   hasRepositoryLoaded?: boolean;
 }
 
@@ -128,9 +129,10 @@ const makeRepository = (
 
         invoke("read_repository", { path: store.repositoryPath }).then(
           (response) => {
+            const data = response as APIRepositoryResponse;
             setStore((state) => ({
               ...state,
-              commits: (response as APIRepositoryResponse).reduce(
+              commits: data.reduce(
                 (commits, x) => ({
                   ...commits,
                   [x[0]]: {
@@ -141,17 +143,19 @@ const makeRepository = (
                 {}
               ),
               currentPathInFileTree: [],
+              // Last commit ID in this response
+              commitIdToFetchAfter: data[data.length - 1][0],
             }));
 
-            const commitId = (response as APIRepositoryResponse)[0][0];
-            getCommit(store.repositoryPath!, commitId).then((response) => {
+            const firstCommitId = data[0][0];
+            getCommit(store.repositoryPath!, firstCommitId).then((response) => {
               setStore((state) => ({
                 ...state,
                 commits: {
                   ...state.commits,
-                  [commitId]: response,
+                  [firstCommitId]: response,
                 },
-                currentCommitId: commitId,
+                currentCommitId: firstCommitId,
                 hasRepositoryLoaded: true,
               }));
             });
