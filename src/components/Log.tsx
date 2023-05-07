@@ -4,11 +4,16 @@ import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
 
 const Log: Component = () => {
-  const [store] = useRepository();
+  const [store, { loadNextCommits }] = useRepository();
   let commitsContainerRef: HTMLDivElement;
 
   const handleScroll = () => {
-    console.log(Math.floor(commitsContainerRef.scrollTop / 32));
+    if (
+      Math.floor(commitsContainerRef.scrollTop / 32) >
+      store.loadedCommitsCount - 25
+    ) {
+      loadNextCommits();
+    }
   };
 
   return (

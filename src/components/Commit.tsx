@@ -33,7 +33,8 @@ function Commit(props: IPropTypes) {
       onClick={handleClick}
       style={{ top: props.index * 32 + "px" }}
     >
-      {props.index} {props.commitMessage}
+      <span class="text-sm text-gray-500 pr-2">{props.index + 1}</span>
+      {props.commitMessage}
     </div>
   );
 }

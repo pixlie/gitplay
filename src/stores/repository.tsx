@@ -33,9 +33,10 @@ interface IStore {
   commits: {
     [commitId: string]: ICommitFrame;
   };
-  commitsCount?: number;
+  commitsCount: number;
+  loadedCommitsCount: number;
   commitIdToFetchAfter?: string;
-  hasRepositoryLoaded?: boolean;
+  isFetchingCommits: boolean;
 }
 
 interface IRepositoryProviderPropTypes {
@@ -106,6 +107,9 @@ const makeRepository = (
     isPlaying: false,
     commits: {},
     currentPathInFileTree: [],
+    commitsCount: 0,
+    loadedCommitsCount: 0,
+    isFetchingCommits: false,
   }
 ) => {
   const [store, setStore] = createStore<IStore>(defaultStore);
@@ -118,13 +122,13 @@ const makeRepository = (
       },
 
       openRepository() {
-        if (!store.repositoryPath) {
+        if (!store.repositoryPath || store.isFetchingCommits) {
           return;
         }
         setStore((state) => ({
           ...state,
           isPlaying: false,
-          hasRepositoryLoaded: false,
+          isFetchingCommits: true,
         }));
 
         invoke("read_repository", { path: store.repositoryPath }).then(
@@ -143,8 +147,8 @@ const makeRepository = (
                 {}
               ),
               currentPathInFileTree: [],
-              // Last commit ID in this response
-              commitIdToFetchAfter: data[data.length - 1][0],
+              loadedCommitsCount: data.length,
+              isFetchingCommits: false,
             }));
 
             const firstCommitId = data[0][0];
@@ -156,14 +160,62 @@ const makeRepository = (
                   [firstCommitId]: response,
                 },
                 currentCommitId: firstCommitId,
-                hasRepositoryLoaded: true,
               }));
             });
             getCommitsCount(store.repositoryPath!).then((response) => {
-              setStore("commitsCount", response);
+              setStore((state) => ({
+                ...state,
+                commitsCount: response,
+                // Last commit ID in this response if total count is more than fetched data
+                commitIdToFetchAfter:
+                  response > data.length ? data[data.length - 1][0] : undefined,
+              }));
             });
           }
         );
+      },
+
+      loadNextCommits() {
+        if (
+          !store.repositoryPath ||
+          store.isFetchingCommits ||
+          !store.commitIdToFetchAfter
+        ) {
+          return;
+        }
+        setStore("isFetchingCommits", true);
+
+        invoke("read_repository", {
+          path: store.repositoryPath,
+          afterCommitId: store.commitIdToFetchAfter,
+        }).then((response) => {
+          const data = response as APIRepositoryResponse;
+          console.log(data);
+
+          setStore((state) => ({
+            ...state,
+            commits: {
+              ...state.commits,
+              ...data.reduce(
+                (commits, x) => ({
+                  ...commits,
+                  [x[0]]: {
+                    commitId: x[0],
+                    commitMessage: x[1],
+                  },
+                }),
+                {}
+              ),
+            },
+            // Last commit ID in this response, if total commits count is more than loaded commits count
+            commitIdToFetchAfter:
+              state.commitsCount > state.loadedCommitsCount + data.length
+                ? data[data.length - 1][0]
+                : undefined,
+            loadedCommitsCount: state.loadedCommitsCount + data.length,
+            isFetchingCommits: false,
+          }));
+        });
       },
 
       setCurrentCommitId(commitId: string) {
