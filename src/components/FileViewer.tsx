@@ -85,41 +85,41 @@ const FileTreeViewer: Component = () => {
   const [store, { getFileTree }] = useRepository();
 
   const getFileBlobs = createMemo(() => {
-    if (store.currentCommitId) {
-      const parentTree: Array<IFileBlob> = !store.currentPathInFileTree.length
-        ? []
-        : [
-            {
-              isDirectory: true,
-              objectId: "RELATIVE_ROOT_PATH",
-              relativeRootPath: "",
-              name: "..",
-            },
-          ];
-      const fileTree = getFileTree(store.currentCommitId);
-
-      return !!fileTree
-        ? [
-            ...parentTree,
-            ...fileTree.blobs.filter(
-              (x) =>
-                x.relativeRootPath ===
-                (!store.currentPathInFileTree.length
-                  ? ""
-                  : store.currentPathInFileTree.join(""))
-            ),
-          ]
-        : [];
+    if (!store.isReady) {
+      return [];
     }
-    return [];
+    const parentTree: Array<IFileBlob> = !store.currentPathInFileTree.length
+      ? []
+      : [
+          {
+            isDirectory: true,
+            objectId: "RELATIVE_ROOT_PATH",
+            relativeRootPath: "",
+            name: "..",
+          },
+        ];
+    const fileTree = getFileTree(store.currentCommitIndex);
+
+    return !!fileTree
+      ? [
+          ...parentTree,
+          ...fileTree.blobs.filter(
+            (x) =>
+              x.relativeRootPath ===
+              (!store.currentPathInFileTree.length
+                ? ""
+                : store.currentPathInFileTree.join(""))
+          ),
+        ]
+      : [];
   });
 
   return (
     <div class="w-full px-4">
-      {store.currentCommitId && (
+      {store.isReady && (
         <div class="grid grid-flow-col gap-2 mb-4">
           <div class="text-gray-400 text-sm">
-            Commit hash: {store.currentCommitId}
+            Commit hash: {store.commits[store.currentCommitIndex].commitId}
           </div>
 
           <div class="text-gray-400 text-sm">

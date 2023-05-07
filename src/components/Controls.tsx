@@ -24,8 +24,7 @@ interface IRepositoryFormPropTypes {
 }
 
 const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
-  const [store, { setRepositoryPath, openRepository, setCurrentCommitId }] =
-    useRepository();
+  const [store, { setRepositoryPath, openRepository }] = useRepository();
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (
     event

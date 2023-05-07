@@ -23,19 +23,17 @@ import {
  * There are setters or modifiers to update the data structure (defined in `makeRepository`)
  */
 interface IStore {
+  isReady: boolean; // Repository is open, first batch of commits, count of commits and first commit details are fetched
   currentBranch?: string;
-  currentCommitId?: string;
+  currentCommitIndex: number;
   currentObjectId?: string;
   currentPathInFileTree: Array<string>;
   playSpeed: number;
   isPlaying: boolean;
   repositoryPath?: string;
-  commits: {
-    [commitId: string]: ICommitFrame;
-  };
+  commits: Array<ICommitFrame>;
   commitsCount: number;
   loadedCommitsCount: number;
-  commitIdToFetchAfter?: string;
   isFetchingCommits: boolean;
 }
 
@@ -103,9 +101,11 @@ const getCommitsCount = (path: string): Promise<number> =>
  */
 const makeRepository = (
   defaultStore: IStore = {
+    isReady: false,
+    currentCommitIndex: 0,
     playSpeed: 1,
     isPlaying: false,
-    commits: {},
+    commits: [],
     currentPathInFileTree: [],
     commitsCount: 0,
     loadedCommitsCount: 0,
@@ -127,6 +127,7 @@ const makeRepository = (
         }
         setStore((state) => ({
           ...state,
+          isReady: false,
           isPlaying: false,
           isFetchingCommits: true,
         }));
@@ -136,39 +137,25 @@ const makeRepository = (
             const data = response as APIRepositoryResponse;
             setStore((state) => ({
               ...state,
-              commits: data.reduce(
-                (commits, x) => ({
-                  ...commits,
-                  [x[0]]: {
-                    commitId: x[0],
-                    commitMessage: x[1],
-                  },
-                }),
-                {}
-              ),
+              commits: data.map((x) => ({
+                commitId: x[0],
+                commitMessage: x[1],
+              })),
               currentPathInFileTree: [],
               loadedCommitsCount: data.length,
               isFetchingCommits: false,
+              currentCommitIndex: 0,
             }));
 
             const firstCommitId = data[0][0];
             getCommit(store.repositoryPath!, firstCommitId).then((response) => {
-              setStore((state) => ({
-                ...state,
-                commits: {
-                  ...state.commits,
-                  [firstCommitId]: response,
-                },
-                currentCommitId: firstCommitId,
-              }));
+              setStore("commits", 0, response);
             });
             getCommitsCount(store.repositoryPath!).then((response) => {
               setStore((state) => ({
                 ...state,
+                isReady: true,
                 commitsCount: response,
-                // Last commit ID in this response if total count is more than fetched data
-                commitIdToFetchAfter:
-                  response > data.length ? data[data.length - 1][0] : undefined,
               }));
             });
           }
@@ -176,73 +163,52 @@ const makeRepository = (
       },
 
       loadNextCommits() {
-        if (
-          !store.repositoryPath ||
-          store.isFetchingCommits ||
-          !store.commitIdToFetchAfter
-        ) {
+        if (!store.isReady || store.isFetchingCommits) {
           return;
         }
         setStore("isFetchingCommits", true);
 
         invoke("read_repository", {
           path: store.repositoryPath,
-          afterCommitId: store.commitIdToFetchAfter,
+          afterCommitId: store.commits.at(-1)?.commitId,
         }).then((response) => {
           const data = response as APIRepositoryResponse;
-          console.log(data);
 
           setStore((state) => ({
             ...state,
-            commits: {
+            commits: [
               ...state.commits,
-              ...data.reduce(
-                (commits, x) => ({
-                  ...commits,
-                  [x[0]]: {
-                    commitId: x[0],
-                    commitMessage: x[1],
-                  },
-                }),
-                {}
-              ),
-            },
-            // Last commit ID in this response, if total commits count is more than loaded commits count
-            commitIdToFetchAfter:
-              state.commitsCount > state.loadedCommitsCount + data.length
-                ? data[data.length - 1][0]
-                : undefined,
+              ...data.map((x) => ({
+                commitId: x[0],
+                commitMessage: x[1],
+              })),
+            ],
             loadedCommitsCount: state.loadedCommitsCount + data.length,
             isFetchingCommits: false,
           }));
         });
       },
 
-      setCurrentCommitId(commitId: string) {
-        if (!store.repositoryPath || !(commitId in store.commits)) {
+      setCurrentCommitIndex(commitIndex: number) {
+        if (!store.isReady) {
           return;
         }
 
         setStore((state) => ({
           ...state,
-          currentCommitId: commitId,
+          currentCommitIndex: commitIndex,
           isPlaying: false,
         }));
 
         if (
-          !("fileTree" in store.commits[commitId]) ||
-          !store.commits[commitId].fileTree
+          !("fileTree" in store.commits[commitIndex]) ||
+          !store.commits[commitIndex].fileTree
         ) {
-          getCommit(store.repositoryPath, commitId).then((response) => {
-            setStore((state) => ({
-              ...state,
-              commits: {
-                ...state.commits,
-                [commitId]: response,
-              },
-              currentCommitId: commitId,
-              isPlaying: false,
-            }));
+          getCommit(
+            store.repositoryPath!,
+            store.commits[commitIndex].commitId
+          ).then((response) => {
+            setStore("commits", commitIndex, response);
           });
         }
       },
@@ -254,44 +220,26 @@ const makeRepository = (
       },
 
       nextCommit() {
-        if (
-          !store.commits ||
-          !Object.keys(store.commits).length ||
-          !store.repositoryPath
-        ) {
+        if (!store.isReady) {
           return;
         }
 
-        let keys = Object.keys(store.commits);
-        let nextCommitId = "";
-
-        if (store.currentCommitId) {
-          let index = keys.findIndex((x) => x === store.currentCommitId);
-          if (index + 1 < keys.length) {
-            nextCommitId = keys[index + 1];
-          } else {
-            setStore("isPlaying", false);
-            return;
-          }
+        if (store.currentCommitIndex >= store.commits.length - 1) {
+          setStore("isPlaying", false);
         } else {
-          nextCommitId = keys[0];
-        }
-
-        setStore((state) => ({
-          ...state,
-          currentCommitId: nextCommitId,
-          isPlaying: true,
-        }));
-
-        getCommit(store.repositoryPath, nextCommitId).then((response) => {
           setStore((state) => ({
             ...state,
-            commits: {
-              ...state.commits,
-              [nextCommitId]: response,
-            },
+            currentCommitIndex: state.currentCommitIndex + 1,
+            isPlaying: true,
           }));
-        });
+
+          getCommit(
+            store.repositoryPath!,
+            store.commits[store.currentCommitIndex].commitId
+          ).then((response) => {
+            setStore("commits", store.currentCommitIndex, response);
+          });
+        }
       },
 
       pause() {
@@ -308,12 +256,12 @@ const makeRepository = (
         );
       },
 
-      getFileTree(commitId: string): IFileTree | undefined {
+      getFileTree(commitIndex: number): IFileTree | undefined {
         if (
-          "fileTree" in store.commits[commitId] &&
-          !!store.commits[commitId].fileTree
+          "fileTree" in store.commits[commitIndex] &&
+          !!store.commits[commitIndex].fileTree
         ) {
-          return store.commits[commitId].fileTree;
+          return store.commits[commitIndex].fileTree;
         }
 
         return undefined;

@@ -9,16 +9,16 @@ interface IPropTypes {
 }
 
 function Commit(props: IPropTypes) {
-  const [store, { setCurrentCommitId }] = useRepository();
+  const [store, { setCurrentCommitIndex }] = useRepository();
 
   const handleClick: JSX.EventHandler<HTMLDivElement, MouseEvent> = () => {
-    setCurrentCommitId(props.commitId);
+    setCurrentCommitIndex(props.index);
   };
 
   const getClassName = createMemo(() => {
     let className =
       "py-1 px-4 cursor-pointer whitespace-nowrap overflow-hidden absolute w-full";
-    if (store.currentCommitId === props.commitId) {
+    if (store.currentCommitIndex === props.index) {
       className = `${className} bg-gray-300`;
     } else {
       className = `${className} hover:bg-gray-200`;

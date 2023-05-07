@@ -33,13 +33,14 @@ const Log: Component = () => {
         ref={commitsContainerRef}
       >
         <div style={{ height: (store.commitsCount || 10) * 32 + "px" }}>
-          {Object.entries(store.commits).map(([commitId, commit], index) => (
-            <Commit
-              commitId={commitId}
-              commitMessage={commit.commitMessage}
-              index={index}
-            />
-          ))}
+          {store.isReady &&
+            store.commits.map((commit, index) => (
+              <Commit
+                commitId={commit.commitId}
+                commitMessage={commit.commitMessage}
+                index={index}
+              />
+            ))}
         </div>
       </div>
     </div>
