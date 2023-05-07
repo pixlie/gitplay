@@ -33,6 +33,7 @@ interface IStore {
   commits: {
     [commitId: string]: ICommitFrame;
   };
+  commitsCount?: number;
   hasRepositoryLoaded?: boolean;
 }
 
@@ -75,8 +76,19 @@ const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
           });
         }
       })
-      .catch((err) => {
-        reject(err);
+      .catch((error) => {
+        reject(error);
+      });
+  });
+
+const getCommitsCount = (path: string): Promise<number> =>
+  new Promise((resolve, reject) => {
+    invoke("commits_count", { path })
+      .then((response) => {
+        resolve(response as number);
+      })
+      .catch((error) => {
+        reject(error);
       });
   });
 
@@ -142,6 +154,9 @@ const makeRepository = (
                 currentCommitId: commitId,
                 hasRepositoryLoaded: true,
               }));
+            });
+            getCommitsCount(store.repositoryPath!).then((response) => {
+              setStore("commitsCount", response);
             });
           }
         );

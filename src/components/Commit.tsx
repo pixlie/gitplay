@@ -1,4 +1,4 @@
-import { JSX, createEffect, createMemo } from "solid-js";
+import { JSX, createMemo } from "solid-js";
 
 import { useRepository } from "../stores/repository";
 
