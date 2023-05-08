@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use git2::Repository;
-use tauri::{self};
+use tauri;
 
 mod walker;
 
@@ -12,7 +12,7 @@ fn read_repository(
     after_commit_id: Option<&str>,
 ) -> Result<Vec<(String, String)>, String> {
     match Repository::open(path) {
-        Ok(repository) => walker::walk_repository(&repository, &after_commit_id),
+        Ok(repository) => walker::walk_repository(&repository, after_commit_id),
         Err(_) => Err("Could not load repository".into()),
     }
 }

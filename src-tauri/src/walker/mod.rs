@@ -37,7 +37,7 @@ struct FileBlob {
 
 pub fn walk_repository(
     repository: &Repository,
-    after_commit_id: &Option<&str>,
+    after_commit_id: Option<&str>,
 ) -> Result<Vec<(String, String)>, String> {
     let walk = repository.revwalk();
     let mut output: Vec<(String, String)> = Vec::new();
@@ -57,14 +57,6 @@ pub fn walk_repository(
             for commit in walkable {
                 match commit {
                     Ok(ok_commit) => {
-                        if !already_after {
-                            if let Some(x) = after_commit_id {
-                                if ok_commit.to_string() == x.to_owned() {
-                                    already_after = true;
-                                }
-                            }
-                        }
-
                         if already_after {
                             let commit_details = get_commit(repository, &ok_commit.to_string());
                             match commit_details {
@@ -76,13 +68,20 @@ pub fn walk_repository(
                                     output.push((ok_commit.to_string(), format!("__error: {}", x)))
                                 }
                             }
+
+                            count += 1;
+                            if count > 99 {
+                                break;
+                            }
+                        } else {
+                            if let Some(x) = after_commit_id {
+                                if ok_commit.to_string() == x.to_owned() {
+                                    already_after = true;
+                                }
+                            }
                         }
                     }
                     Err(x) => output.push(("__unknown__".to_owned(), x.message().to_owned())),
-                }
-                count += 1;
-                if count > 99 {
-                    break;
                 }
             }
             Ok(output)

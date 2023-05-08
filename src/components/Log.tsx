@@ -1,10 +1,48 @@
-import { Component } from "solid-js";
+import { Component, createEffect, createSignal } from "solid-js";
 
 import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
 
 const Log: Component = () => {
-  const [store] = useRepository();
+  const [store, { loadNextCommits }] = useRepository();
+  const [windowStart, setWindowStart] = createSignal<number>(0);
+  const [commitsToRender, setCommitsToRender] = createSignal<number>(50);
+  let commitsContainerRef: HTMLDivElement;
+  const commitItemHeight = 32;
+  let timer: ReturnType<typeof setTimeout>;
+
+  const handleScroll = () => {
+    if (!!timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      setWindowStart(
+        Math.floor(commitsContainerRef.scrollTop / commitItemHeight)
+      );
+      if (
+        Math.floor(commitsContainerRef.scrollTop / commitItemHeight) >
+        store.loadedCommitsCount - 25
+      ) {
+        loadNextCommits();
+      }
+    }, 10);
+  };
+
+  createEffect(() => {
+    if (commitsContainerRef.offsetHeight) {
+      setCommitsToRender(
+        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10
+      );
+    }
+  });
+
+  window.onresize = () => {
+    if (commitsContainerRef.offsetHeight) {
+      setCommitsToRender(
+        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10
+      );
+    }
+  };
 
   return (
     <div class="border-gray-200 border-r-2 flex flex-col overflow-hidden h-full">
@@ -17,10 +55,24 @@ const Log: Component = () => {
         )}
       </h1>
 
-      <div class="overflow-auto">
-        {Object.entries(store.commits).map(([commitId, commit]) => (
-          <Commit commitId={commitId} commitMessage={commit.commitMessage} />
-        ))}
+      <div
+        class="overflow-auto relative"
+        onScroll={handleScroll}
+        ref={commitsContainerRef}
+      >
+        {store.isReady && (
+          <div style={{ height: store.commitsCount * commitItemHeight + "px" }}>
+            {store.commits
+              .slice(windowStart(), windowStart() + commitsToRender())
+              .map((commit, index) => (
+                <Commit
+                  commitId={commit.commitId}
+                  commitMessage={commit.commitMessage}
+                  index={windowStart() + index}
+                />
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );

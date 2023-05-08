@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal } from "solid-js";
+import { Component, createEffect, createSignal, onMount } from "solid-js";
 import type { JSX } from "solid-js";
 
 import { useRepository } from "../stores/repository";
@@ -24,8 +24,7 @@ interface IRepositoryFormPropTypes {
 }
 
 const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
-  const [store, { setRepositoryPath, openRepository, setCurrentCommitId }] =
-    useRepository();
+  const [store, { setRepositoryPath, openRepository }] = useRepository();
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (
     event
