@@ -1,18 +1,46 @@
-import { Component, onMount } from "solid-js";
+import { Component, createEffect, createSignal } from "solid-js";
 
 import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
 
 const Log: Component = () => {
   const [store, { loadNextCommits }] = useRepository();
+  const [windowStart, setWindowStart] = createSignal<number>(0);
+  const [commitsToRender, setCommitsToRender] = createSignal<number>(50);
   let commitsContainerRef: HTMLDivElement;
+  const commitItemHeight = 32;
+  let timer: ReturnType<typeof setTimeout>;
 
   const handleScroll = () => {
-    if (
-      Math.floor(commitsContainerRef.scrollTop / 32) >
-      store.loadedCommitsCount - 25
-    ) {
-      loadNextCommits();
+    if (!!timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      setWindowStart(
+        Math.floor(commitsContainerRef.scrollTop / commitItemHeight)
+      );
+      if (
+        Math.floor(commitsContainerRef.scrollTop / commitItemHeight) >
+        store.loadedCommitsCount - 25
+      ) {
+        loadNextCommits();
+      }
+    }, 10);
+  };
+
+  createEffect(() => {
+    if (commitsContainerRef.offsetHeight) {
+      setCommitsToRender(
+        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10
+      );
+    }
+  });
+
+  window.onresize = () => {
+    if (commitsContainerRef.offsetHeight) {
+      setCommitsToRender(
+        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10
+      );
     }
   };
 
@@ -32,16 +60,19 @@ const Log: Component = () => {
         onScroll={handleScroll}
         ref={commitsContainerRef}
       >
-        <div style={{ height: (store.commitsCount || 10) * 32 + "px" }}>
-          {store.isReady &&
-            store.commits.map((commit, index) => (
-              <Commit
-                commitId={commit.commitId}
-                commitMessage={commit.commitMessage}
-                index={index}
-              />
-            ))}
-        </div>
+        {store.isReady && (
+          <div style={{ height: store.commitsCount * commitItemHeight + "px" }}>
+            {store.commits
+              .slice(windowStart(), windowStart() + commitsToRender())
+              .map((commit, index) => (
+                <Commit
+                  commitId={commit.commitId}
+                  commitMessage={commit.commitMessage}
+                  index={windowStart() + index}
+                />
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );
