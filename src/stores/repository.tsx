@@ -23,6 +23,7 @@ import {
  * There are setters or modifiers to update the data structure (defined in `makeRepository`)
  */
 interface IStore {
+  isPathInvalid: boolean;
   isReady: boolean; // Repository is open, first batch of commits, count of commits and first commit details are fetched
   currentBranch?: string;
   currentCommitIndex: number;
@@ -35,6 +36,7 @@ interface IStore {
   commitsCount: number;
   loadedCommitsCount: number;
   isFetchingCommits: boolean;
+  lastErrorMessage?: string;
 }
 
 interface IRepositoryProviderPropTypes {
@@ -101,6 +103,7 @@ const getCommitsCount = (path: string): Promise<number> =>
  */
 const makeRepository = (
   defaultStore: IStore = {
+    isPathInvalid: false,
     isReady: false,
     currentCommitIndex: 0,
     playSpeed: 1,
@@ -127,39 +130,56 @@ const makeRepository = (
         }
         setStore((state) => ({
           ...state,
+          isPathInvalid: false,
           isReady: false,
           isPlaying: false,
           isFetchingCommits: true,
         }));
 
-        invoke("read_repository", { path: store.repositoryPath }).then(
-          (response) => {
-            const data = response as APIRepositoryResponse;
-            setStore((state) => ({
-              ...state,
-              commits: data.map((x) => ({
-                commitId: x[0],
-                commitMessage: x[1],
-              })),
-              currentPathInFileTree: [],
-              loadedCommitsCount: data.length,
-              isFetchingCommits: false,
-              currentCommitIndex: 0,
-            }));
+        invoke("open_repository", { path: store.repositoryPath })
+          .then(() => {
+            setStore("isPathInvalid", false);
+          })
+          .catch(() => {
+            setStore("isPathInvalid", true);
+          });
 
-            const firstCommitId = data[0][0];
-            getCommit(store.repositoryPath!, firstCommitId).then((response) => {
-              setStore("commits", 0, response);
-            });
-            getCommitsCount(store.repositoryPath!).then((response) => {
-              setStore((state) => ({
-                ...state,
-                isReady: true,
-                commitsCount: response,
-              }));
-            });
-          }
-        );
+        invoke("prepare_cache")
+          .then((response) => {
+            console.log(response);
+
+            setStore("commitsCount", response as number);
+          })
+          .catch((error) => {
+            setStore("lastErrorMessage", error);
+          });
+
+        invoke("get_commits").then((response) => {
+          const data = response as APIRepositoryResponse;
+          setStore((state) => ({
+            ...state,
+            commits: data.map((x) => ({
+              commitId: x[0],
+              commitMessage: x[1],
+            })),
+            currentPathInFileTree: [],
+            loadedCommitsCount: data.length,
+            isFetchingCommits: false,
+            currentCommitIndex: 0,
+          }));
+
+          const firstCommitId = data[0][0];
+          getCommit(store.repositoryPath!, firstCommitId).then((response) => {
+            setStore("commits", 0, response);
+          });
+          // getCommitsCount(store.repositoryPath!).then((response) => {
+          //   setStore((state) => ({
+          //     ...state,
+          //     isReady: true,
+          //     commitsCount: response,
+          //   }));
+          // });
+        });
       },
 
       loadNextCommits() {
