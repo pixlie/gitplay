@@ -23,7 +23,6 @@ import {
  * There are setters or modifiers to update the data structure (defined in `makeRepository`)
  */
 interface IStore {
-  isPathInvalid: boolean;
   isReady: boolean; // Repository is open, first batch of commits, count of commits and first commit details are fetched
   currentBranch?: string;
   currentCommitIndex: number;
@@ -47,14 +46,12 @@ interface IRepositoryProviderPropTypes {
  * Function to fetch the details for a single commit, generally the file list.
  * The file list is flat, unlike a tree in Rust code. Each item has its relative path.
  *
- * @param path string path to the repository
  * @param commitId string commit hash
  * @returns Promise of commit's detail with the file list
  */
-const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
+const getCommit = (commitId: string): Promise<ICommitFrame> =>
   new Promise((resolve, reject) => {
-    invoke("read_commit", {
-      path,
+    invoke("get_commit_details", {
       commitId,
     })
       .then((response) => {
@@ -83,17 +80,6 @@ const getCommit = (path: string, commitId: string): Promise<ICommitFrame> =>
       });
   });
 
-const getCommitsCount = (path: string): Promise<number> =>
-  new Promise((resolve, reject) => {
-    invoke("commits_count", { path })
-      .then((response) => {
-        resolve(response as number);
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-
 /**
  * Function to create the actual SolidJS store with the IStore data structure and
  * the setters to modifiers to the data.
@@ -103,7 +89,6 @@ const getCommitsCount = (path: string): Promise<number> =>
  */
 const makeRepository = (
   defaultStore: IStore = {
-    isPathInvalid: false,
     isReady: false,
     currentCommitIndex: 0,
     playSpeed: 1,
@@ -137,49 +122,40 @@ const makeRepository = (
         }));
 
         invoke("open_repository", { path: store.repositoryPath })
-          .then(() => {
-            setStore("isPathInvalid", false);
+          .then(() => invoke("prepare_cache"))
+          .then((response) => {
+            setStore("commitsCount", response as number);
+            return invoke("get_commits");
           })
-          .catch(() => {
-            setStore("isPathInvalid", true);
-          });
+          .then((response) => {
+            const data = response as APIRepositoryResponse;
+            setStore((state) => ({
+              ...state,
+              commits: data.map((x) => ({
+                commitId: x[0],
+                commitMessage: x[1],
+              })),
+              currentPathInFileTree: [],
+              loadedCommitsCount: data.length,
+              isFetchingCommits: false,
+              currentCommitIndex: 0,
+            }));
 
-        invoke("prepare_cache")
+            return getCommit(data[0][0]);
+          })
           .then((response) => {
             console.log(response);
 
-            setStore("commitsCount", response as number);
+            setStore("commits", 0, response);
+            setStore((state) => ({
+              ...state,
+              isReady: true,
+              isFetchingCommits: false,
+            }));
           })
           .catch((error) => {
-            setStore("lastErrorMessage", error);
+            setStore("lastErrorMessage", error as string);
           });
-
-        invoke("get_commits").then((response) => {
-          const data = response as APIRepositoryResponse;
-          setStore((state) => ({
-            ...state,
-            commits: data.map((x) => ({
-              commitId: x[0],
-              commitMessage: x[1],
-            })),
-            currentPathInFileTree: [],
-            loadedCommitsCount: data.length,
-            isFetchingCommits: false,
-            currentCommitIndex: 0,
-          }));
-
-          const firstCommitId = data[0][0];
-          getCommit(store.repositoryPath!, firstCommitId).then((response) => {
-            setStore("commits", 0, response);
-          });
-          // getCommitsCount(store.repositoryPath!).then((response) => {
-          //   setStore((state) => ({
-          //     ...state,
-          //     isReady: true,
-          //     commitsCount: response,
-          //   }));
-          // });
-        });
       },
 
       loadNextCommits() {
@@ -188,11 +164,11 @@ const makeRepository = (
         }
         setStore("isFetchingCommits", true);
 
-        invoke("read_repository", {
-          path: store.repositoryPath,
+        invoke("get_commits", {
           afterCommitId: store.commits.at(-1)?.commitId,
         }).then((response) => {
           const data = response as APIRepositoryResponse;
+          console.log(data);
 
           setStore((state) => ({
             ...state,
@@ -224,10 +200,7 @@ const makeRepository = (
           !("fileTree" in store.commits[commitIndex]) ||
           !store.commits[commitIndex].fileTree
         ) {
-          getCommit(
-            store.repositoryPath!,
-            store.commits[commitIndex].commitId
-          ).then((response) => {
+          getCommit(store.commits[commitIndex].commitId).then((response) => {
             setStore("commits", commitIndex, response);
           });
         }
@@ -253,12 +226,11 @@ const makeRepository = (
             isPlaying: true,
           }));
 
-          getCommit(
-            store.repositoryPath!,
-            store.commits[store.currentCommitIndex].commitId
-          ).then((response) => {
-            setStore("commits", store.currentCommitIndex, response);
-          });
+          getCommit(store.commits[store.currentCommitIndex].commitId).then(
+            (response) => {
+              setStore("commits", store.currentCommitIndex, response);
+            }
+          );
         }
       },
 
