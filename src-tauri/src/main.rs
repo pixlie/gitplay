@@ -4,7 +4,6 @@
 use std::path::PathBuf;
 
 use cache::GitplayState;
-use git2::Repository;
 use tauri::{self, State};
 use walker::CommitFrame;
 
@@ -13,18 +12,12 @@ mod walker;
 
 #[tauri::command]
 async fn open_repository(path: &str, repo: State<'_, GitplayState>) -> Result<String, String> {
-    match repo.open(PathBuf::from(path)) {
-        Ok(msg) => Ok(msg),
-        Err(e) => Err(e),
-    }
+    repo.open(PathBuf::from(path))
 }
 
 #[tauri::command]
 async fn prepare_cache(repo: State<'_, GitplayState>) -> Result<usize, String> {
-    match repo.cache_commits() {
-        Ok(count) => Ok(count),
-        Err(msg) => Err(msg),
-    }
+    repo.cache_commits()
 }
 
 #[tauri::command]
@@ -32,21 +25,15 @@ async fn get_commits(
     repo: State<'_, GitplayState>,
     after_commit_id: Option<&str>,
 ) -> Result<Vec<(String, String)>, String> {
-    match repo.get_commits(after_commit_id) {
-        Ok(results) => Ok(results),
-        Err(_) => Err("Could not load repository".into()),
-    }
+    repo.get_commits(after_commit_id)
 }
 
 #[tauri::command]
-async fn get_commit_details(path: &str, commit_id: &str) -> Result<CommitFrame, String> {
-    match Repository::open(path) {
-        Ok(repository) => match walker::get_commit(&repository, commit_id) {
-            Ok(commit_frame) => Ok(commit_frame),
-            Err(_) => Err("Could not read commit".into()),
-        },
-        Err(_) => Err("Could not read commit".into()),
-    }
+async fn get_commit_details(
+    commit_id: &str,
+    repo: State<'_, GitplayState>,
+) -> Result<CommitFrame, String> {
+    repo.get_commit_details(commit_id)
 }
 
 fn main() {
