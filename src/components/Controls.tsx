@@ -1,29 +1,10 @@
-import { Component, createEffect, createSignal, onMount } from "solid-js";
+import { Component, createEffect, createSignal } from "solid-js";
 import type { JSX } from "solid-js";
 
 import { useRepository } from "../stores/repository";
+import Button from "./Button";
 
-interface IButtonPropTypes {
-  label: string;
-  onClick?: JSX.EventHandler<HTMLButtonElement, MouseEvent>;
-}
-
-const Button: Component<IButtonPropTypes> = (props: IButtonPropTypes) => {
-  return (
-    <button
-      class="p-1 px-4 mx-2 text-sm rounded-md border-gray-300 border bg-white hover:shadow-sm hover:bg-gray-500 hover:text-white"
-      onClick={props.onClick}
-    >
-      {props.label}
-    </button>
-  );
-};
-
-interface IRepositoryFormPropTypes {
-  setToggle: (value: boolean) => void;
-}
-
-const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
+const RepositoryForm: Component = () => {
   const [store, { setRepositoryPath, openRepository }] = useRepository();
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (
@@ -34,36 +15,17 @@ const RepositoryForm: Component<IRepositoryFormPropTypes> = (props) => {
 
   const handleSave = () => {
     openRepository();
-    props.setToggle(false);
   };
 
   return (
     <>
       <input
         type="text"
-        class="p-1 px-2 mx-2 text-sm rounded-md border-gray-300 border focus:outline-none focus:bg-yellow-100"
+        class="flex-1 p-1 px-2 ml-2 text-sm rounded-md border-gray-300 border focus:outline-none bg-yellow-50"
         value={store.repositoryPath || ""}
         onInput={handleInput}
       />
       <Button label="Open" onClick={handleSave} />
-    </>
-  );
-};
-
-const OpenRepositoryButton: Component = () => {
-  const [toggle, setToggle] = createSignal<boolean>(false);
-
-  const handleClick = () => {
-    setToggle(!toggle());
-  };
-
-  return (
-    <>
-      {toggle() ? (
-        <RepositoryForm setToggle={setToggle} />
-      ) : (
-        <Button label="Open repository" onClick={handleClick} />
-      )}
     </>
   );
 };
@@ -111,8 +73,8 @@ const PlaySpeed: Component = () => {
 
 const Controls: Component = () => {
   return (
-    <div class="py-3 w-full bg-gray-100 border-b-gray-200 border z-10">
-      <OpenRepositoryButton />
+    <div class="py-3 w-full bg-gray-100 border-b-gray-200 border z-10 flex">
+      <RepositoryForm />
       <Button label="Branch: main" />
       <PlayPause />
       <PlaySpeed />
