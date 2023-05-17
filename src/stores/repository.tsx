@@ -125,10 +125,14 @@ const makeRepository = (
           .then(() => invoke("prepare_cache"))
           .then((response) => {
             setStore("commitsCount", response as number);
+            console.log("commitsCount", response);
+
             return invoke("get_commits");
           })
           .then((response) => {
             const data = response as APIRepositoryResponse;
+            console.log("commits count in first page", data.length);
+
             setStore((state) => ({
               ...state,
               commits: data.map((x) => ({
@@ -144,7 +148,7 @@ const makeRepository = (
             return getCommit(data[0][0]);
           })
           .then((response) => {
-            console.log(response);
+            console.log("commits [0,0]", response);
 
             setStore("commits", 0, response);
             setStore((state) => ({
