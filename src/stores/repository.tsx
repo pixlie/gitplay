@@ -36,6 +36,10 @@ interface IStore {
   loadedCommitsCount: number;
   isFetchingCommits: boolean;
   lastErrorMessage?: string;
+
+  // UI layout state
+  isCommitSidebarVisible: boolean;
+  isFileTreeVisible: boolean;
 }
 
 interface IRepositoryProviderPropTypes {
@@ -98,6 +102,9 @@ const makeRepository = (
     commitsCount: 0,
     loadedCommitsCount: 0,
     isFetchingCommits: false,
+
+    isCommitSidebarVisible: false,
+    isFileTreeVisible: false,
   }
 ) => {
   const [store, setStore] = createStore<IStore>(defaultStore);

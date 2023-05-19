@@ -30,36 +30,6 @@ const RepositoryForm: Component = () => {
   );
 };
 
-const PlayPause: Component = () => {
-  const [store, { nextCommit, pause }] = useRepository();
-  const [intervalId, setIntervalId] =
-    createSignal<ReturnType<typeof setInterval>>();
-
-  const handlePlayPause = () => {
-    if (store.isPlaying) {
-      pause();
-    } else {
-      nextCommit();
-      setIntervalId(setInterval(nextCommit, 1000 / store.playSpeed));
-    }
-  };
-
-  createEffect(() => {
-    // Player can be paused from other UI elements, and then when the store changes.
-    // We listen to the store status `isPlaying` and cancel our Interval so the next scene is not called
-    if (!store.isPlaying && intervalId()) {
-      clearInterval(intervalId());
-    }
-  });
-
-  return (
-    <Button
-      label={store.isPlaying ? "Pause" : "Play"}
-      onClick={handlePlayPause}
-    />
-  );
-};
-
 const PlaySpeed: Component = () => {
   const [store, { setPlaySpeed }] = useRepository();
 
@@ -76,7 +46,6 @@ const Controls: Component = () => {
     <div class="py-3 w-full bg-gray-100 border-b-gray-200 border z-10 flex">
       <RepositoryForm />
       <Button label="Branch: main" />
-      <PlayPause />
       <PlaySpeed />
     </div>
   );
