@@ -95,7 +95,7 @@ const makeRepository = (
   defaultStore: IStore = {
     isReady: false,
     currentCommitIndex: 0,
-    playSpeed: 1,
+    playSpeed: 4,
     isPlaying: false,
     commits: [],
     currentPathInFileTree: [],
@@ -132,14 +132,10 @@ const makeRepository = (
           .then(() => invoke("prepare_cache"))
           .then((response) => {
             setStore("commitsCount", response as number);
-            console.log("commitsCount", response);
-
             return invoke("get_commits");
           })
           .then((response) => {
             const data = response as APIRepositoryResponse;
-            console.log("commits count in first page", data.length);
-
             setStore((state) => ({
               ...state,
               commits: data.map((x) => ({
@@ -155,8 +151,6 @@ const makeRepository = (
             return getCommit(data[0][0]);
           })
           .then((response) => {
-            console.log("commits [0,0]", response);
-
             setStore("commits", 0, response);
             setStore((state) => ({
               ...state,
@@ -179,8 +173,6 @@ const makeRepository = (
           afterCommitId: store.commits.at(-1)?.commitId,
         }).then((response) => {
           const data = response as APIRepositoryResponse;
-          console.log(data);
-
           setStore((state) => ({
             ...state,
             commits: [

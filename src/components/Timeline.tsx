@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal } from "solid-js";
+import { Component, createEffect, createMemo, createSignal } from "solid-js";
 import Button from "./Button";
 import { useRepository } from "../stores/repository";
 
@@ -65,9 +65,57 @@ const Backward: Component = () => {
 };
 
 const Timeline: Component = () => {
+  const [focus, setFocus] = createSignal<boolean>(false);
+  const [store] = useRepository();
+
+  const handleTimelineEnter = () => {
+    setFocus(true);
+  };
+
+  const handleTimelineLeave = () => {
+    setFocus(false);
+  };
+
+  const getViewedWidth = createMemo(
+    () => `${(store.currentCommitIndex / store.commitsCount) * 100}%`
+  );
+  const getRemainingWidth = createMemo(
+    () =>
+      `${
+        ((store.commitsCount - store.currentCommitIndex - 1) /
+          store.commitsCount) *
+        100
+      }%`
+  );
+
   return (
-    <div class="absolute bottom-0 bg-gray-100 w-full p-4">
-      <div class="w-full border-gray-500 border-t-2"></div>
+    <div class="fixed bottom-0 bg-gray-100 w-full pt-4 pb-2">
+      <div
+        class="relative w-full bg-gray-100 h-3 py-1 px-4 cursor-pointer"
+        onMouseEnter={handleTimelineEnter}
+        onMouseLeave={handleTimelineLeave}
+      >
+        <div class="relative w-full flex flex-row">
+          <div
+            style={{
+              "border-top": "3px solid rgb(190 18 60)",
+              width: getViewedWidth(),
+            }}
+          ></div>
+          <div
+            style={{
+              "border-top": "3px solid rgb(148 163 184)",
+              width: getRemainingWidth(),
+            }}
+          ></div>
+          {focus() && (
+            <div
+              class="absolute -top-1 w-3 h-3 bg-rose-700 rounded-full"
+              style={{ left: getViewedWidth() }}
+            ></div>
+          )}
+        </div>
+      </div>
 
       <PlayPause />
       <Forward />

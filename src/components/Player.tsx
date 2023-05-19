@@ -23,7 +23,9 @@ const Player: Component = () => {
           </div>
         </div>
       ) : (
-        <div class="w-full h-full relative">
+        <div class="w-screen h-full relative">
+          <FileViewer />
+
           <Timeline />
         </div>
       )}
