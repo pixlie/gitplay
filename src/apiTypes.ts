@@ -25,6 +25,7 @@ const isIAPICommitFrame = (data: unknown): data is IAPICommitFrame => {
 };
 
 interface IFileBlob {
+  id: string;
   objectId: string;
   relativeRootPath: string;
   name: string;

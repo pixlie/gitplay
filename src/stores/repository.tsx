@@ -64,6 +64,7 @@ const getCommit = (commitId: string): Promise<ICommitFrame> =>
             ? {
                 objectId: response.file_structure.object_id,
                 blobs: response.file_structure.blobs.map((x) => ({
+                  id: x.object_id,
                   objectId: x.object_id,
                   relativeRootPath: x.relative_root_path,
                   name: x.name,

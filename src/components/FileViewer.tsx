@@ -1,4 +1,4 @@
-import { Component, createMemo } from "solid-js";
+import { Component, For, createMemo } from "solid-js";
 
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
@@ -6,8 +6,9 @@ import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/fold
 
 import { useRepository } from "../stores/repository";
 import { IFileBlob } from "../apiTypes";
+import { createStore, reconcile } from "solid-js/store";
 
-const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
+const FileBlobItem: Component<IFileBlob> = (props: IFileBlob) => {
   const [store, { setPathInFileTree, appendPathInFileTree }] = useRepository();
 
   let thumbIcon = FileIcon;
@@ -81,10 +82,10 @@ const FileBlobViewer: Component<IFileBlob> = (props: IFileBlob) => {
   );
 };
 
-const FileTreeViewer: Component = () => {
+const FileTreeBlobList: Component = () => {
   const [store, { getFileTree }] = useRepository();
 
-  const getFileBlobs = createMemo(() => {
+  const getFileTreeMemo = createMemo(() => {
     if (!store.isReady) {
       return [];
     }
@@ -93,6 +94,7 @@ const FileTreeViewer: Component = () => {
       : [
           {
             isDirectory: true,
+            id: "RELATIVE_ROOT_PATH",
             objectId: "RELATIVE_ROOT_PATH",
             relativeRootPath: "",
             name: "..",
@@ -115,50 +117,61 @@ const FileTreeViewer: Component = () => {
   });
 
   return (
+    <>
+      <div class="border border-gray-200">
+        <div class="flex flex-row w-full py-2 border-b cursor-pointer hover:bg-gray-100">
+          <div></div>
+          <div class="px-2 text-sm flex-1">Folder/File</div>
+          <div class="text-sm text-gray-400 px-4">Lines of Code</div>
+          <div class="text-sm text-gray-400 px-4">Created</div>
+          <div class="text-sm text-gray-400 px-4">Last modified</div>
+        </div>
+        <For each={getFileTreeMemo().filter((x) => x.isDirectory)}>
+          {(x) => (
+            <FileBlobItem
+              id={x.id}
+              objectId={x.objectId}
+              relativeRootPath={x.relativeRootPath}
+              name={x.name}
+              isDirectory={x.isDirectory}
+            />
+          )}
+        </For>
+
+        <For each={getFileTreeMemo().filter((x) => !x.isDirectory)}>
+          {(x) => (
+            <FileBlobItem
+              id={x.id}
+              objectId={x.objectId}
+              relativeRootPath={x.relativeRootPath}
+              name={x.name}
+              isDirectory={x.isDirectory}
+            />
+          )}
+        </For>
+      </div>
+
+      <div class="text-gray-400 text-sm pt-2">
+        Items: {getFileTreeMemo().length}
+      </div>
+    </>
+  );
+};
+
+const FileTreeViewer: Component = () => {
+  const [store] = useRepository();
+
+  return (
     <div class="w-full px-4">
       {store.isReady && (
-        <div class="grid grid-flow-col gap-2 mb-4">
+        <div class="grid grid-flow-col gap-2 mb-3">
           <div class="text-gray-400 text-sm">
             Commit hash: {store.commits[store.currentCommitIndex].commitId}
           </div>
-
-          <div class="text-gray-400 text-sm">
-            Items: {getFileBlobs().length}
-          </div>
         </div>
       )}
 
-      {getFileBlobs().length && (
-        <div class="border border-gray-200">
-          <div class="flex flex-row w-full py-2 border-b cursor-pointer hover:bg-gray-100">
-            <div></div>
-            <div class="px-2 text-sm flex-1">Folder/File</div>
-            <div class="text-sm text-gray-400 px-4">Lines of Code</div>
-            <div class="text-sm text-gray-400 px-4">Created</div>
-            <div class="text-sm text-gray-400 px-4">Last modified</div>
-          </div>
-          {getFileBlobs()
-            .filter((x) => x.isDirectory)
-            .map((x) => (
-              <FileBlobViewer
-                objectId={x.objectId}
-                relativeRootPath={x.relativeRootPath}
-                name={x.name}
-                isDirectory={x.isDirectory}
-              />
-            ))}
-          {getFileBlobs()
-            .filter((x) => !x.isDirectory)
-            .map((x) => (
-              <FileBlobViewer
-                objectId={x.objectId}
-                relativeRootPath={x.relativeRootPath}
-                name={x.name}
-                isDirectory={x.isDirectory}
-              />
-            ))}
-        </div>
-      )}
+      <FileTreeBlobList />
     </div>
   );
 };
