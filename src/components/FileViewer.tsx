@@ -166,7 +166,10 @@ const FileTreeViewer: Component = () => {
       {store.isReady && (
         <div class="grid grid-flow-col gap-2 mb-3">
           <div class="text-gray-400 text-sm">
-            Commit hash: {store.commits[store.currentCommitIndex].commitId}
+            Commit hash:{" "}
+            <span class="select-text cursor-text inline-block">
+              {store.commits[store.currentCommitIndex].commitId}
+            </span>
           </div>
         </div>
       )}
@@ -180,11 +183,20 @@ const FileViewer: Component = () => {
   const [store] = useRepository();
 
   const displayCurrentPath = createMemo(() => {
-    return !store.currentPathInFileTree.length
-      ? "Browsing files"
-      : `Browsing files at: ${store.currentPathInFileTree
-          .filter((x) => x !== "")
-          .join("")}`;
+    return (
+      <>
+        {!store.currentPathInFileTree.length ? (
+          "Browsing files"
+        ) : (
+          <>
+            Browsing files at:{" "}
+            <span class="select-text cursor-text inline-block">
+              {store.currentPathInFileTree.filter((x) => x !== "").join("")}
+            </span>
+          </>
+        )}
+      </>
+    );
   });
 
   return (

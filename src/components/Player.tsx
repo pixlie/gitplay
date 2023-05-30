@@ -10,7 +10,7 @@ const Player: Component = () => {
   const [store] = useRepository();
 
   return (
-    <div class="flex flex-col h-screen w-screen overflow-hidden">
+    <div class="flex flex-col h-screen w-screen overflow-hidden select-none cursor-default">
       <Controls />
 
       {store.isCommitSidebarVisible ? (
