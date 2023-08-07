@@ -6,7 +6,6 @@ import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/fold
 
 import { useRepository } from "../stores/repository";
 import { IFileBlob } from "../apiTypes";
-import { createStore, reconcile } from "solid-js/store";
 
 const FileBlobItem: Component<IFileBlob> = (props: IFileBlob) => {
   const [store, { setPathInFileTree, appendPathInFileTree }] = useRepository();

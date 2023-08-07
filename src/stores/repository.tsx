@@ -24,13 +24,16 @@ import {
  */
 interface IStore {
   isReady: boolean; // Repository is open, first batch of commits, count of commits and first commit details are fetched
+  repositoryPath?: string;
+
   currentBranch?: string;
   currentCommitIndex: number;
   currentObjectId?: string;
   currentPathInFileTree: Array<string>;
+
   playSpeed: number;
   isPlaying: boolean;
-  repositoryPath?: string;
+
   commits: Array<ICommitFrame>;
   commitsCount: number;
   loadedCommitsCount: number;
@@ -85,6 +88,21 @@ const getCommit = (commitId: string): Promise<ICommitFrame> =>
       });
   });
 
+const constDefaultStore: IStore = {
+  isReady: false,
+  currentCommitIndex: 0,
+  playSpeed: 4,
+  isPlaying: false,
+  commits: [],
+  currentPathInFileTree: [],
+  commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
+  loadedCommitsCount: 0, // How many commits have be fetched in frontend
+  isFetchingCommits: false,
+
+  isCommitSidebarVisible: false,
+  isFileTreeVisible: false,
+};
+
 /**
  * Function to create the actual SolidJS store with the IStore data structure and
  * the setters to modifiers to the data.
@@ -92,22 +110,7 @@ const getCommit = (commitId: string): Promise<ICommitFrame> =>
  * @param defaultStore IStore default values
  * @returns readly IStore data and the setters/modifiers
  */
-const makeRepository = (
-  defaultStore: IStore = {
-    isReady: false,
-    currentCommitIndex: 0,
-    playSpeed: 4,
-    isPlaying: false,
-    commits: [],
-    currentPathInFileTree: [],
-    commitsCount: 0,
-    loadedCommitsCount: 0,
-    isFetchingCommits: false,
-
-    isCommitSidebarVisible: false,
-    isFileTreeVisible: false,
-  }
-) => {
+const makeRepository = (defaultStore: IStore = constDefaultStore) => {
   const [store, setStore] = createStore<IStore>(defaultStore);
 
   return [
@@ -118,14 +121,12 @@ const makeRepository = (
       },
 
       openRepository() {
-        if (!store.repositoryPath || store.isFetchingCommits) {
+        if (!store.repositoryPath) {
           return;
         }
-        setStore((state) => ({
-          ...state,
+        setStore(() => ({
+          ...constDefaultStore,
           isPathInvalid: false,
-          isReady: false,
-          isPlaying: false,
           isFetchingCommits: true,
         }));
 
@@ -186,6 +187,7 @@ const makeRepository = (
             loadedCommitsCount: state.loadedCommitsCount + data.length,
             isFetchingCommits: false,
           }));
+          console.log(`Loaded ${data.length} commits`);
         });
       },
 
@@ -221,7 +223,7 @@ const makeRepository = (
           return;
         }
 
-        if (store.currentCommitIndex >= store.commits.length - 1) {
+        if (store.currentCommitIndex >= store.commitsCount - 1) {
           setStore("isPlaying", false);
         } else {
           setStore((state) => ({

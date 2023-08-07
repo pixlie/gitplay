@@ -66,7 +66,7 @@ const Backward: Component = () => {
 
 const Timeline: Component = () => {
   const [focus, setFocus] = createSignal<boolean>(false);
-  const [store] = useRepository();
+  const [store, { loadNextCommits }] = useRepository();
 
   const handleTimelineEnter = () => {
     setFocus(true);
@@ -87,6 +87,15 @@ const Timeline: Component = () => {
         100
       }%`
   );
+
+  createEffect(() => {
+    if (store.loadedCommitsCount - store.currentCommitIndex === 25) {
+      // We are approaching the end of the number of loaded commits, lets fetch new ones
+      console.log("Loading new commits");
+
+      loadNextCommits();
+    }
+  });
 
   return (
     <div class="fixed bottom-0 bg-gray-100 w-full pt-4 pb-2">
