@@ -82,7 +82,7 @@ const FileBlobItem: Component<IFileBlob> = (props: IFileBlob) => {
 };
 
 const FileTreeBlobList: Component = () => {
-  const [store, { getFileTree }] = useRepository();
+  const [store] = useRepository();
 
   const getFileTreeMemo = createMemo(() => {
     if (!store.isReady) {
@@ -99,7 +99,8 @@ const FileTreeBlobList: Component = () => {
             name: "..",
           },
         ];
-    const fileTree = getFileTree(store.currentCommitIndex);
+    // const fileTree = getFileTree(store.currentCommitIndex);
+    const fileTree = store.currentFileTree;
 
     return !!fileTree
       ? [

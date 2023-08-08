@@ -16,8 +16,12 @@ const PlayPause: Component = () => {
     if (store.isPlaying) {
       pause();
     } else {
-      nextCommit();
-      setIntervalId(setInterval(nextCommit, 1000 / store.playSpeed));
+      if (store.loadedCommitsCount > store.currentCommitIndex) {
+        nextCommit();
+        setIntervalId(setInterval(nextCommit, 1000 / store.playSpeed));
+      } else {
+        pause();
+      }
     }
   };
 
@@ -25,6 +29,8 @@ const PlayPause: Component = () => {
     // Player can be paused from other UI elements, and then when the store changes.
     // We listen to the store status `isPlaying` and cancel our Interval so the next scene is not called
     if (!store.isPlaying && intervalId()) {
+      console.log("Pausing");
+
       clearInterval(intervalId());
     }
   });

@@ -40,7 +40,7 @@ interface IFileTree {
 interface ICommitFrame {
   commitId: string;
   commitMessage: string;
-  fileTree?: IFileTree;
+  // fileTree?: IFileTree;
 }
 
 export type {

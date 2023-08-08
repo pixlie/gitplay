@@ -30,6 +30,7 @@ interface IStore {
   currentCommitIndex: number;
   currentObjectId?: string;
   currentPathInFileTree: Array<string>;
+  currentFileTree?: IFileTree;
 
   playSpeed: number;
   isPlaying: boolean;
@@ -49,6 +50,10 @@ interface IRepositoryProviderPropTypes {
   children: JSX.Element;
 }
 
+interface ICommitDetails extends ICommitFrame {
+  fileTree?: IFileTree;
+}
+
 /**
  * Function to fetch the details for a single commit, generally the file list.
  * The file list is flat, unlike a tree in Rust code. Each item has its relative path.
@@ -56,7 +61,7 @@ interface IRepositoryProviderPropTypes {
  * @param commitId string commit hash
  * @returns Promise of commit's detail with the file list
  */
-const getCommit = (commitId: string): Promise<ICommitFrame> =>
+const getCommit = (commitId: string): Promise<ICommitDetails> =>
   new Promise((resolve, reject) => {
     invoke("get_commit_details", {
       commitId,
@@ -175,18 +180,18 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
           afterCommitId: store.commits.at(-1)?.commitId,
         }).then((response) => {
           const data = response as APIRepositoryResponse;
-          setStore((state) => ({
-            ...state,
-            commits: [
-              ...state.commits,
-              ...data.map((x) => ({
-                commitId: x[0],
-                commitMessage: x[1],
-              })),
-            ],
-            loadedCommitsCount: state.loadedCommitsCount + data.length,
-            isFetchingCommits: false,
-          }));
+          setStore("commits", [
+            ...store.commits,
+            ...data.map((x) => ({
+              commitId: x[0],
+              commitMessage: x[1],
+            })),
+          ]);
+          setStore(
+            "loadedCommitsCount",
+            store.loadedCommitsCount + data.length
+          );
+          setStore("isFetchingCommits", false);
           console.log(`Loaded ${data.length} commits`);
         });
       },
@@ -199,22 +204,18 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
         setStore((state) => ({
           ...state,
           currentCommitIndex: commitIndex,
+          currentFileTree: undefined,
           isPlaying: false,
         }));
 
-        if (
-          !("fileTree" in store.commits[commitIndex]) ||
-          !store.commits[commitIndex].fileTree
-        ) {
-          getCommit(store.commits[commitIndex].commitId).then((response) => {
-            setStore("commits", commitIndex, response);
-          });
-        }
+        getCommit(store.commits[commitIndex].commitId).then((response) => {
+          setStore("currentFileTree", response.fileTree);
+        });
       },
 
       setPlaySpeed() {
         setStore("playSpeed", (playSpeed) =>
-          playSpeed < 16 ? playSpeed * 2 : 1
+          playSpeed < 32 ? playSpeed * 2 : 1
         );
       },
 
@@ -234,7 +235,7 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
 
           getCommit(store.commits[store.currentCommitIndex].commitId).then(
             (response) => {
-              setStore("commits", store.currentCommitIndex, response);
+              setStore("currentFileTree", response.fileTree);
             }
           );
         }
@@ -254,16 +255,16 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
         );
       },
 
-      getFileTree(commitIndex: number): IFileTree | undefined {
-        if (
-          "fileTree" in store.commits[commitIndex] &&
-          !!store.commits[commitIndex].fileTree
-        ) {
-          return store.commits[commitIndex].fileTree;
-        }
+      // getFileTree(commitIndex: number): IFileTree | undefined {
+      //   if (
+      //     "fileTree" in store.commits[commitIndex] &&
+      //     !!store.commits[commitIndex].fileTree
+      //   ) {
+      //     return store.commits[commitIndex].fileTree;
+      //   }
 
-        return undefined;
-      },
+      //   return undefined;
+      // },
     },
   ] as const; // `as const` forces tuple type inference
 };
