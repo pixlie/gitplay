@@ -158,9 +158,9 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
             return getCommit(data[0][0]);
           })
           .then((response) => {
-            setStore("commits", 0, response);
             setStore((state) => ({
               ...state,
+              currentFileTree: response.fileTree,
               isReady: true,
               isFetchingCommits: false,
             }));
@@ -192,7 +192,6 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
             store.loadedCommitsCount + data.length
           );
           setStore("isFetchingCommits", false);
-          console.log(`Loaded ${data.length} commits`);
         });
       },
 
@@ -254,17 +253,6 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
           !!cp ? [...cp, path] : [path]
         );
       },
-
-      // getFileTree(commitIndex: number): IFileTree | undefined {
-      //   if (
-      //     "fileTree" in store.commits[commitIndex] &&
-      //     !!store.commits[commitIndex].fileTree
-      //   ) {
-      //     return store.commits[commitIndex].fileTree;
-      //   }
-
-      //   return undefined;
-      // },
     },
   ] as const; // `as const` forces tuple type inference
 };
