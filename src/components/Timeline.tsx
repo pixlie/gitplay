@@ -97,8 +97,6 @@ const Timeline: Component = () => {
   createEffect(() => {
     if (store.loadedCommitsCount - store.currentCommitIndex === 25) {
       // We are approaching the end of the number of loaded commits, lets fetch new ones
-      console.log("Loading new commits");
-
       loadNextCommits();
     }
   });

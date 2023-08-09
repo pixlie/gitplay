@@ -77,6 +77,7 @@ const getCommit = (commitId: string): Promise<ICommitDetails> =>
                   relativeRootPath: x.relative_root_path,
                   name: x.name,
                   isDirectory: x.is_directory,
+                  size: x.size,
                 })),
               }
             : undefined;

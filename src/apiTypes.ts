@@ -5,6 +5,7 @@ interface IAPIFileBlob {
   relative_root_path: string;
   name: string;
   is_directory: boolean;
+  size?: number;
 }
 
 interface IAPIFileTree {
@@ -30,6 +31,7 @@ interface IFileBlob {
   relativeRootPath: string;
   name: string;
   isDirectory: boolean;
+  size?: number;
 }
 
 interface IFileTree {
