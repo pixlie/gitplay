@@ -25,6 +25,7 @@ const isIAPICommitFrame = (data: unknown): data is IAPICommitFrame => {
 };
 
 interface IFileBlob {
+  id: string;
   objectId: string;
   relativeRootPath: string;
   name: string;
@@ -39,7 +40,7 @@ interface IFileTree {
 interface ICommitFrame {
   commitId: string;
   commitMessage: string;
-  fileTree?: IFileTree;
+  // fileTree?: IFileTree;
 }
 
 export type {

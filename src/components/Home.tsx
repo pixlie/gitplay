@@ -5,7 +5,7 @@ import { useRepository } from "../stores/repository";
 import Button from "./Button";
 
 const Home: Component = () => {
-  const [store, { setRepositoryPath, openRepository }] = useRepository();
+  const [_, { setRepositoryPath, openRepository }] = useRepository();
 
   const handleOpenRequest = async () => {
     let selectedPath = await open({
