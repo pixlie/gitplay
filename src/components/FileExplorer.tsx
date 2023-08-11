@@ -1,14 +1,14 @@
-import { Component, For, createMemo, createSignal } from "solid-js";
+import { Component, For, createMemo } from "solid-js";
 
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
 import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 
 import { useRepository } from "../stores/repository";
-import { IFileBlob } from "../apiTypes";
+import { IFileBlob, IFileTreeViewer } from "../types";
 
 const FileBlobItem: Component<IFileBlob> = (props: IFileBlob) => {
-  const [store, { setPathInFileTree, appendPathInFileTree }] = useRepository();
+  const [_, { setPathInFileTree, appendPathInFileTree }] = useRepository();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -41,13 +41,11 @@ const FileBlobItem: Component<IFileBlob> = (props: IFileBlob) => {
     if (props.objectId === "RELATIVE_ROOT_PATH") {
       // We have to move up the path, so we simply exclude the last part
       setPathInFileTree(
-        store.currentPathInFileTree.slice(
-          0,
-          store.currentPathInFileTree.length - 1
-        )
+        props.indexOfFileTree,
+        props.currentFileTreePath.slice(0, props.currentFileTreePath.length - 1)
       );
     } else if (!!props.isDirectory) {
-      appendPathInFileTree(`${props.name}/`);
+      appendPathInFileTree(props.indexOfFileTree, `${props.name}/`);
     }
   };
 
@@ -84,20 +82,20 @@ interface Position {
   y: number;
 }
 
-const FileTreeBlobList: Component = () => {
+const FileTreeBlobList: Component<IFileTreeViewer> = ({
+  currentPath,
+  index,
+}) => {
   const [store] = useRepository();
-  const [isMouseDown, setIsMouseDown] = createSignal<boolean>(false);
-  const [mouseOffset, setMouseOffset] = createSignal<Position>({
-    x: 0,
-    y: 0,
-  });
+  let isPointerDown: boolean = false;
+  let posOffset: Position = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
 
   const getFileTreeMemo = createMemo(() => {
     if (!store.isReady) {
       return [];
     }
-    const parentTree: Array<IFileBlob> = !store.currentPathInFileTree.length
+    const parentTree: Array<IFileBlob> = !currentPath.length
       ? []
       : [
           {
@@ -106,6 +104,8 @@ const FileTreeBlobList: Component = () => {
             objectId: "RELATIVE_ROOT_PATH",
             relativeRootPath: "",
             name: "..",
+            currentFileTreePath: currentPath,
+            indexOfFileTree: index,
           },
         ];
     // const fileTree = getFileTree(store.currentCommitIndex);
@@ -117,51 +117,46 @@ const FileTreeBlobList: Component = () => {
           ...fileTree.blobs.filter(
             (x) =>
               x.relativeRootPath ===
-              (!store.currentPathInFileTree.length
-                ? ""
-                : store.currentPathInFileTree.join(""))
+              (!currentPath.length ? "" : currentPath.join(""))
           ),
         ]
       : [];
   });
 
-  const handleMouseDown = (event: MouseEvent) => {
-    setMouseOffset({
-      x: event.clientX - containerRef.offsetLeft,
-      y: event.clientY - containerRef.offsetTop,
-    });
-    setIsMouseDown(true);
+  const handlePointerDown = (event: PointerEvent) => {
+    posOffset = {
+      x: containerRef.offsetLeft - event.clientX,
+      y: containerRef.offsetTop - event.clientY,
+    };
+    isPointerDown = true;
+    containerRef.setPointerCapture(event.pointerId);
   };
 
-  const releaseMouse = () => {
-    setIsMouseDown(false);
+  const handlePointerUp = () => {
+    isPointerDown = false;
   };
 
-  const handleMouseMove = (event: MouseEvent) => {
-    if (!!isMouseDown()) {
-      containerRef.style.left = `${event.clientX - mouseOffset().x}px`;
-      containerRef.style.top = `${event.clientY - mouseOffset().y}px`;
+  const handleMouseMove = (event: PointerEvent) => {
+    if (isPointerDown) {
+      containerRef.style.left = `${
+        event.clientX + posOffset.x > 0 ? event.clientX + posOffset.x : 0
+      }px`;
+      containerRef.style.top = `${
+        event.clientY + posOffset.y > 0 ? event.clientY + posOffset.y : 0
+      }px`;
     }
   };
 
   return (
     <div
-      class="bg-white"
-      style={{
-        position: "absolute",
-        // top: `${mousePosition().y - mouseDownPosition().y}px`,
-        // left: `${mousePosition().x - mouseDownPosition().x}px`,
-      }}
+      class="bg-white absolute"
       ref={containerRef}
+      onPointerDown={handlePointerDown}
+      onMouseUp={handlePointerUp}
+      onPointerMove={handleMouseMove}
     >
       <div class="border border-gray-200">
-        <div
-          class="flex flex-row py-2 border-b bg-gray-100 cursor-move"
-          onMouseDown={handleMouseDown}
-          onMouseUp={releaseMouse}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={releaseMouse}
-        >
+        <div class="flex flex-row py-2 border-b bg-gray-100 cursor-move">
           <div class="w-60 pl-4 text-xs">Folder/File</div>
           <div class="w-12 text-xs">Size</div>
         </div>
@@ -174,6 +169,8 @@ const FileTreeBlobList: Component = () => {
               relativeRootPath={x.relativeRootPath}
               name={x.name}
               isDirectory={x.isDirectory}
+              currentFileTreePath={currentPath}
+              indexOfFileTree={index}
             />
           )}
         </For>
@@ -187,6 +184,8 @@ const FileTreeBlobList: Component = () => {
               name={x.name}
               isDirectory={x.isDirectory}
               size={x.size}
+              currentFileTreePath={currentPath}
+              indexOfFileTree={index}
             />
           )}
         </For>
@@ -199,42 +198,21 @@ const FileTreeBlobList: Component = () => {
   );
 };
 
-const FileTreeViewer: Component = () => {
-  const [store] = useRepository();
-
-  return (
-    <div class="px-4 w-fit">
-      {store.isReady && (
-        <div class="grid grid-flow-col gap-2 mb-3">
-          <div class="text-gray-400 text-sm">
-            Commit hash:{" "}
-            <span class="select-text cursor-text inline-block">
-              {store.commits[store.currentCommitIndex].commitId}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div class="w-full h-full relative">
-        <FileTreeBlobList />
-      </div>
-    </div>
-  );
-};
-
-const FileViewer: Component = () => {
+const FileExplorer: Component = () => {
   const [store] = useRepository();
 
   const displayCurrentPath = createMemo(() => {
     return (
       <>
-        {!store.currentPathInFileTree.length ? (
+        {!store.fileTreeViewers[0].currentPath.length ? (
           "Browsing files"
         ) : (
           <>
             Browsing files at:{" "}
             <span class="select-text cursor-text inline-block">
-              {store.currentPathInFileTree.filter((x) => x !== "").join("")}
+              {store.fileTreeViewers[0].currentPath
+                .filter((x) => x !== "")
+                .join("")}
             </span>
           </>
         )}
@@ -248,9 +226,26 @@ const FileViewer: Component = () => {
         {displayCurrentPath()}
       </h1>
 
-      <FileTreeViewer />
+      <div class="px-4 w-fit">
+        {store.isReady && (
+          <div class="grid grid-flow-col gap-2 mb-3">
+            <div class="text-gray-400 text-sm">
+              Commit hash:{" "}
+              <span class="select-text cursor-text inline-block">
+                {store.commits[store.currentCommitIndex].commitId}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div class="w-full h-full relative">
+          {store.fileTreeViewers.map((x) => (
+            <FileTreeBlobList currentPath={x.currentPath} index={x.index} />
+          ))}
+        </div>
+      </div>
     </>
   );
 };
 
-export default FileViewer;
+export default FileExplorer;

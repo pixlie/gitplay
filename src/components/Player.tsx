@@ -1,7 +1,7 @@
 import { Component } from "solid-js";
 
 import Controls from "./Controls";
-import FileViewer from "./FileViewer";
+import FileExplorer from "./FileExplorer";
 import Log from "./Log";
 import { useRepository } from "../stores/repository";
 import Timeline from "./Timeline";
@@ -19,12 +19,12 @@ const Player: Component = () => {
             <Log />
           </div>
           <div class="flex-1">
-            <FileViewer />
+            <FileExplorer />
           </div>
         </div>
       ) : (
         <div class="w-screen h-full relative">
-          <FileViewer />
+          <FileExplorer />
 
           <Timeline />
         </div>

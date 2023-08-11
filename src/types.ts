@@ -32,6 +32,8 @@ interface IFileBlob {
   name: string;
   isDirectory: boolean;
   size?: number;
+  currentFileTreePath: Array<string>;
+  indexOfFileTree: number;
 }
 
 interface IFileTree {
@@ -45,6 +47,11 @@ interface ICommitFrame {
   // fileTree?: IFileTree;
 }
 
+interface IFileTreeViewer {
+  currentPath: Array<string>;
+  index: number;
+}
+
 export type {
   APIRepositoryResponse,
   IAPIFileBlob,
@@ -53,6 +60,7 @@ export type {
   IFileBlob,
   IFileTree,
   ICommitFrame,
+  IFileTreeViewer,
 };
 
 export { isIAPICommitFrame };

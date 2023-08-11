@@ -7,8 +7,9 @@ import {
   APIRepositoryResponse,
   ICommitFrame,
   IFileTree,
+  IFileTreeViewer,
   isIAPICommitFrame,
-} from "../apiTypes";
+} from "../types";
 
 /**
  * Main data structure for the UI application.
@@ -29,7 +30,6 @@ interface IStore {
   currentBranch?: string;
   currentCommitIndex: number;
   currentObjectId?: string;
-  currentPathInFileTree: Array<string>;
   currentFileTree?: IFileTree;
 
   playSpeed: number;
@@ -44,6 +44,8 @@ interface IStore {
   // UI layout state
   isCommitSidebarVisible: boolean;
   isFileTreeVisible: boolean;
+
+  fileTreeViewers: [IFileTreeViewer];
 }
 
 interface IRepositoryProviderPropTypes {
@@ -100,13 +102,19 @@ const constDefaultStore: IStore = {
   playSpeed: 4,
   isPlaying: false,
   commits: [],
-  currentPathInFileTree: [],
   commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
   loadedCommitsCount: 0, // How many commits have be fetched in frontend
   isFetchingCommits: false,
 
   isCommitSidebarVisible: false,
   isFileTreeVisible: false,
+
+  fileTreeViewers: [
+    {
+      currentPath: [],
+      index: 0,
+    },
+  ],
 };
 
 /**
@@ -245,12 +253,12 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
         setStore("isPlaying", false);
       },
 
-      setPathInFileTree(path: Array<string>) {
-        setStore("currentPathInFileTree", path);
+      setPathInFileTree(index: number, path: Array<string>) {
+        setStore("fileTreeViewers", index, "currentPath", path);
       },
 
-      appendPathInFileTree(path: string) {
-        setStore("currentPathInFileTree", (cp) =>
+      appendPathInFileTree(index: number, path: string) {
+        setStore("fileTreeViewers", index, "currentPath", (cp) =>
           !!cp ? [...cp, path] : [path]
         );
       },
