@@ -1,3 +1,5 @@
+import { Accessor, Setter } from "solid-js";
+
 type APIRepositoryResponse = Array<[string, string]>;
 
 interface IAPIFileBlob {
@@ -32,8 +34,6 @@ interface IFileBlob {
   name: string;
   isDirectory: boolean;
   size?: number;
-  currentFileTreePath: Array<string>;
-  indexOfFileTree: number;
 }
 
 interface IFileTree {
@@ -47,9 +47,9 @@ interface ICommitFrame {
   // fileTree?: IFileTree;
 }
 
-interface IFileTreeViewer {
-  currentPath: Array<string>;
-  index: number;
+interface IFileListItem {
+  currentPath: Accessor<Array<string>>;
+  setCurrentPath: Setter<Array<string>>;
 }
 
 export type {
@@ -60,7 +60,7 @@ export type {
   IFileBlob,
   IFileTree,
   ICommitFrame,
-  IFileTreeViewer,
+  IFileListItem,
 };
 
 export { isIAPICommitFrame };

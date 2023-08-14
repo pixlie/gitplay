@@ -1,13 +1,13 @@
 import type { JSX } from "solid-js";
-import { Component, createContext, useContext } from "solid-js";
+import { Component, createContext, createSignal, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
 import {
   APIRepositoryResponse,
   ICommitFrame,
+  IFileListItem,
   IFileTree,
-  IFileTreeViewer,
   isIAPICommitFrame,
 } from "../types";
 
@@ -45,7 +45,7 @@ interface IStore {
   isCommitSidebarVisible: boolean;
   isFileTreeVisible: boolean;
 
-  fileTreeViewers: [IFileTreeViewer];
+  fileTreeViewers: [IFileListItem];
 }
 
 interface IRepositoryProviderPropTypes {
@@ -96,25 +96,30 @@ const getCommit = (commitId: string): Promise<ICommitDetails> =>
       });
   });
 
-const constDefaultStore: IStore = {
-  isReady: false,
-  currentCommitIndex: 0,
-  playSpeed: 4,
-  isPlaying: false,
-  commits: [],
-  commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
-  loadedCommitsCount: 0, // How many commits have be fetched in frontend
-  isFetchingCommits: false,
+const getDefaultStore = () => {
+  const [initialPath, setInitialPath] = createSignal<Array<string>>([]);
 
-  isCommitSidebarVisible: false,
-  isFileTreeVisible: false,
+  const constDefaultStore: IStore = {
+    isReady: false,
+    currentCommitIndex: 0,
+    playSpeed: 4,
+    isPlaying: false,
+    commits: [],
+    commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
+    loadedCommitsCount: 0, // How many commits have be fetched in frontend
+    isFetchingCommits: false,
 
-  fileTreeViewers: [
-    {
-      currentPath: [],
-      index: 0,
-    },
-  ],
+    isCommitSidebarVisible: false,
+    isFileTreeVisible: false,
+
+    fileTreeViewers: [
+      {
+        currentPath: initialPath,
+        setCurrentPath: setInitialPath,
+      },
+    ],
+  };
+  return constDefaultStore;
 };
 
 /**
@@ -124,7 +129,7 @@ const constDefaultStore: IStore = {
  * @param defaultStore IStore default values
  * @returns readly IStore data and the setters/modifiers
  */
-const makeRepository = (defaultStore: IStore = constDefaultStore) => {
+const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
   const [store, setStore] = createStore<IStore>(defaultStore);
 
   return [
@@ -139,7 +144,7 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
           return;
         }
         setStore(() => ({
-          ...constDefaultStore,
+          ...getDefaultStore(),
           isPathInvalid: false,
           isFetchingCommits: true,
         }));
@@ -254,13 +259,26 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
       },
 
       setPathInFileTree(index: number, path: Array<string>) {
-        setStore("fileTreeViewers", index, "currentPath", path);
+        store.fileTreeViewers[index].setCurrentPath(path);
       },
 
       appendPathInFileTree(index: number, path: string) {
-        setStore("fileTreeViewers", index, "currentPath", (cp) =>
-          !!cp ? [...cp, path] : [path]
+        store.fileTreeViewers[index].setCurrentPath([
+          ...store.fileTreeViewers[index].currentPath(),
+          path,
+        ]);
+      },
+
+      changePathDirectoryUp(index: number) {
+        store.fileTreeViewers[index].setCurrentPath(
+          store.fileTreeViewers[index]
+            .currentPath()
+            .slice(0, store.fileTreeViewers[index].currentPath().length - 1)
         );
+      },
+
+      getCurrentPathForIndex(index: number) {
+        return store.fileTreeViewers[index].currentPath;
       },
     },
   ] as const; // `as const` forces tuple type inference
