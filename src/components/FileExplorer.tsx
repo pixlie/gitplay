@@ -14,7 +14,10 @@ interface IFileBlobItemProps extends IFileBlob {
 }
 
 const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
-  const [_, { appendPathInFileTree, changePathDirectoryUp }] = useRepository();
+  const [
+    _,
+    { appendPathInFileTree, changePathDirectoryUp, setPathInNewFileTree },
+  ] = useRepository();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -52,14 +55,14 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
     }
   };
 
-  let handleClick = handleDirectoryClick;
+  const handleDirectoryNewWindowClick = (event: MouseEvent) => {
+    event.preventDefault();
+    setPathInNewFileTree(`${props.name}/`);
+  };
 
   return (
-    <div
-      class="flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100"
-      onClick={handleClick}
-    >
-      <div class="w-60 pl-2">
+    <div class="flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100">
+      <div class="w-60 pl-2" onClick={handleDirectoryClick}>
         <img
           src={thumbIcon}
           alt="File type"
@@ -83,6 +86,7 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
             src={OpenWindowIcon}
             alt="Open in new window"
             class="h-3 opacity-30 px-1 mt-1"
+            onClick={handleDirectoryNewWindowClick}
           />
         )}
       </div>
@@ -184,7 +188,7 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
   });
 
   return (
-    <div class="bg-white absolute" ref={containerRef}>
+    <div class="bg-white absolute p-2" ref={containerRef}>
       <div
         class="pt-1 pb-2 text-sm text-gray-600 cursor-grab"
         ref={draggableRef}

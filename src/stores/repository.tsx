@@ -258,8 +258,19 @@ const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
         setStore("isPlaying", false);
       },
 
-      setPathInFileTree(index: number, path: Array<string>) {
-        store.fileTreeViewers[index].setCurrentPath(path);
+      setPathInNewFileTree(path: string) {
+        const [path_, setPath_] = createSignal<Array<string>>([path]);
+        setStore("fileTreeViewers", (ft) => [
+          ...ft,
+          {
+            currentPath: path_,
+            setCurrentPath: setPath_,
+          },
+        ]);
+      },
+
+      setPathInFileTree(index: number, path: string) {
+        store.fileTreeViewers[index].setCurrentPath([path]);
       },
 
       appendPathInFileTree(index: number, path: string) {
