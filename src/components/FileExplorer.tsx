@@ -105,7 +105,7 @@ interface IFileListProps {
 }
 
 const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
-  const [store] = useRepository();
+  const [store, { setFileTreeToFocus }] = useRepository();
   let isPointerDown: boolean = false;
   let posOffset: Position = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
@@ -151,6 +151,7 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
     draggableRef.setPointerCapture(event.pointerId);
     draggableRef.classList.remove("cursor-grab");
     draggableRef.classList.add("cursor-grabbing");
+    setFileTreeToFocus(index());
   };
 
   const handlePointerUp = () => {
@@ -188,7 +189,13 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
   });
 
   return (
-    <div class="bg-white absolute p-2" ref={containerRef}>
+    <div
+      class="bg-white absolute p-2 border-gray-100 border rounded-md"
+      ref={containerRef}
+      style={{
+        "z-index": store.indexOfFileTreeInFocus === index() ? 100 : index(),
+      }}
+    >
       <div
         class="pt-1 pb-2 text-sm text-gray-600 cursor-grab"
         ref={draggableRef}

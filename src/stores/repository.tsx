@@ -43,9 +43,9 @@ interface IStore {
 
   // UI layout state
   isCommitSidebarVisible: boolean;
-  isFileTreeVisible: boolean;
 
   fileTreeViewers: [IFileListItem];
+  indexOfFileTreeInFocus?: number;
 }
 
 interface IRepositoryProviderPropTypes {
@@ -110,7 +110,6 @@ const getDefaultStore = () => {
     isFetchingCommits: false,
 
     isCommitSidebarVisible: false,
-    isFileTreeVisible: false,
 
     fileTreeViewers: [
       {
@@ -290,6 +289,10 @@ const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
 
       getCurrentPathForIndex(index: number) {
         return store.fileTreeViewers[index].currentPath;
+      },
+
+      setFileTreeToFocus(index: number) {
+        setStore("indexOfFileTreeInFocus", index);
       },
     },
   ] as const; // `as const` forces tuple type inference

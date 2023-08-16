@@ -100,7 +100,10 @@ const Timeline: Component = () => {
   });
 
   return (
-    <div class="fixed bottom-0 bg-gray-100 w-full pt-4 pb-2">
+    <div
+      class="fixed bottom-0 bg-gray-100 w-full pt-4 pb-2"
+      style={{ "z-index": 200 }}
+    >
       <div
         class="relative w-full bg-gray-100 h-3 py-1 px-4 cursor-pointer"
         onMouseEnter={handleTimelineEnter}
