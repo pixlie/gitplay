@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use git2::{Commit, ObjectType, Repository, Sort, TreeWalkResult};
 use serde::Serialize;
 
@@ -134,6 +136,27 @@ fn get_tree(commit: &Commit, repository: &Repository) -> Option<FileTree> {
             println!("Could not extract tree of commit");
             None
         }
+    }
+}
+
+pub fn read_file_contents(repository: &Repository, object_id: &str) -> Result<String, String> {
+    match repository.revparse_single(object_id) {
+        Ok(file_obj) => match file_obj.kind() {
+            Some(ObjectType::Blob) => {
+                let mut contents = String::new();
+                match file_obj
+                    .as_blob()
+                    .unwrap()
+                    .content()
+                    .read_to_string(&mut contents)
+                {
+                    Ok(_) => Ok(contents),
+                    Err(_) => Err("Could not read file".to_owned()),
+                }
+            }
+            _ => Err("This is not a file".to_owned()),
+        },
+        Err(_) => Err("Could not parse the given file object id".to_owned()),
     }
 }
 

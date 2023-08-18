@@ -5,6 +5,8 @@ import FileExplorer from "./FileExplorer";
 import Log from "./Log";
 import { useRepository } from "../stores/repository";
 import Timeline from "./Timeline";
+import { FileContentsProvider } from "../stores/fileContents";
+import { ViewersProvider } from "../stores/viewers";
 
 const Player: Component = () => {
   const [store, { setExplorerDimensions }] = useRepository();
@@ -39,7 +41,11 @@ const Player: Component = () => {
         </div>
       ) : (
         <div class="w-screen h-full relative" ref={explorerWindow}>
-          <FileExplorer />
+          <ViewersProvider>
+            <FileContentsProvider>
+              <FileExplorer />
+            </FileContentsProvider>
+          </ViewersProvider>
 
           <Timeline />
         </div>

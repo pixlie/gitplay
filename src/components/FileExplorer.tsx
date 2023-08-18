@@ -6,7 +6,10 @@ import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/fold
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 
 import { useRepository } from "../stores/repository";
-import { IFileBlob } from "../types";
+import { IFileBlob, IPosition } from "../types";
+import { useFileContents } from "../stores/fileContents";
+import FileViewer from "./FileViewer";
+import { useFileViewers } from "../stores/viewers";
 
 interface IFileBlobItemProps extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
@@ -17,7 +20,8 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
   const [
     _,
     { appendPathInFileTree, changePathDirectoryUp, setPathInNewFileTree },
-  ] = useRepository();
+  ] = useFileViewers();
+  const [_fc, { initiateFile }] = useFileContents();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -46,12 +50,14 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
     }
   }
 
-  const handleDirectoryClick = () => {
+  const handleClick = () => {
     if (props.objectId === "RELATIVE_ROOT_PATH") {
       // We have to move up the path, so we simply exclude the last part
       changePathDirectoryUp(props.indexOfFileTree());
     } else if (!!props.isDirectory) {
       appendPathInFileTree(props.indexOfFileTree(), `${props.name}/`);
+    } else {
+      initiateFile(props.objectId);
     }
   };
 
@@ -62,7 +68,7 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
 
   return (
     <div class="flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100">
-      <div class="w-60 pl-2" onClick={handleDirectoryClick}>
+      <div class="w-60 pl-2" onClick={handleClick}>
         <img
           src={thumbIcon}
           alt="File type"
@@ -94,20 +100,16 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
   );
 };
 
-interface Position {
-  x: number;
-  y: number;
-}
-
 interface IFileListProps {
   currentPath: Accessor<Array<string>>;
   index: Accessor<number>;
 }
 
 const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
-  const [store, { setFileTreeToFocus }] = useRepository();
+  const [store] = useRepository();
+  const [fileViewers, { setFileTreeToFocus }] = useFileViewers();
   let isPointerDown: boolean = false;
-  let posOffset: Position = { x: 0, y: 0 };
+  let posOffset: IPosition = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
   let draggableRef: HTMLDivElement;
 
@@ -273,6 +275,9 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
 
 const FileExplorer: Component = () => {
   const [store] = useRepository();
+  const [fileViewers] = useFileViewers();
+  const [fileContents] = useFileContents();
+
   return (
     <div class="px-4 w-fit">
       {store.isReady && (
@@ -287,8 +292,12 @@ const FileExplorer: Component = () => {
       )}
 
       <div class="w-full h-full relative">
-        <For each={store.fileTreeViewers}>
+        <For each={fileViewers.fileTrees}>
           {(x, index) => <FileList currentPath={x.currentPath} index={index} />}
+        </For>
+
+        <For each={Object.keys(fileContents.filesByObjectId)}>
+          {(key) => <FileViewer objectId={key} />}
         </For>
       </div>
     </div>

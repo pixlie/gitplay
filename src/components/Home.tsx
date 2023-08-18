@@ -23,7 +23,7 @@ const Home: Component = () => {
   };
 
   return (
-    <div class="flex w-screen h-screen justify-center items-center">
+    <div class="flex w-screen h-screen justify-center items-center bg-gray-200">
       <div>
         <h1 class="text-lg font-bold cursor-default select-none text-center">
           git<span class="italic">Play</span>!
