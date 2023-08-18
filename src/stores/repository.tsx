@@ -1,14 +1,15 @@
 import type { JSX } from "solid-js";
-import { Component, createContext, useContext } from "solid-js";
+import { Component, createContext, createSignal, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
 import {
   APIRepositoryResponse,
   ICommitFrame,
+  IFileListItem,
   IFileTree,
   isIAPICommitFrame,
-} from "../apiTypes";
+} from "../types";
 
 /**
  * Main data structure for the UI application.
@@ -29,7 +30,6 @@ interface IStore {
   currentBranch?: string;
   currentCommitIndex: number;
   currentObjectId?: string;
-  currentPathInFileTree: Array<string>;
   currentFileTree?: IFileTree;
 
   playSpeed: number;
@@ -43,7 +43,11 @@ interface IStore {
 
   // UI layout state
   isCommitSidebarVisible: boolean;
-  isFileTreeVisible: boolean;
+
+  fileTreeViewers: [IFileListItem];
+  indexOfFileTreeInFocus?: number;
+
+  explorerDimensions: [number, number];
 }
 
 interface IRepositoryProviderPropTypes {
@@ -77,6 +81,7 @@ const getCommit = (commitId: string): Promise<ICommitDetails> =>
                   relativeRootPath: x.relative_root_path,
                   name: x.name,
                   isDirectory: x.is_directory,
+                  size: x.size,
                 })),
               }
             : undefined;
@@ -93,19 +98,30 @@ const getCommit = (commitId: string): Promise<ICommitDetails> =>
       });
   });
 
-const constDefaultStore: IStore = {
-  isReady: false,
-  currentCommitIndex: 0,
-  playSpeed: 4,
-  isPlaying: false,
-  commits: [],
-  currentPathInFileTree: [],
-  commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
-  loadedCommitsCount: 0, // How many commits have be fetched in frontend
-  isFetchingCommits: false,
+const getDefaultStore = () => {
+  const [initialPath, setInitialPath] = createSignal<Array<string>>([]);
 
-  isCommitSidebarVisible: false,
-  isFileTreeVisible: false,
+  const constDefaultStore: IStore = {
+    isReady: false,
+    currentCommitIndex: 0,
+    playSpeed: 4,
+    isPlaying: false,
+    commits: [],
+    commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
+    loadedCommitsCount: 0, // How many commits have be fetched in frontend
+    isFetchingCommits: false,
+
+    isCommitSidebarVisible: false,
+
+    fileTreeViewers: [
+      {
+        currentPath: initialPath,
+        setCurrentPath: setInitialPath,
+      },
+    ],
+    explorerDimensions: [0, 0],
+  };
+  return constDefaultStore;
 };
 
 /**
@@ -115,7 +131,7 @@ const constDefaultStore: IStore = {
  * @param defaultStore IStore default values
  * @returns readly IStore data and the setters/modifiers
  */
-const makeRepository = (defaultStore: IStore = constDefaultStore) => {
+const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
   const [store, setStore] = createStore<IStore>(defaultStore);
 
   return [
@@ -130,7 +146,7 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
           return;
         }
         setStore(() => ({
-          ...constDefaultStore,
+          ...getDefaultStore(),
           isPathInvalid: false,
           isFetchingCommits: true,
         }));
@@ -244,14 +260,46 @@ const makeRepository = (defaultStore: IStore = constDefaultStore) => {
         setStore("isPlaying", false);
       },
 
-      setPathInFileTree(path: Array<string>) {
-        setStore("currentPathInFileTree", path);
+      setExplorerDimensions(width: number, height: number) {
+        setStore("explorerDimensions", [width, height]);
       },
 
-      appendPathInFileTree(path: string) {
-        setStore("currentPathInFileTree", (cp) =>
-          !!cp ? [...cp, path] : [path]
+      setPathInNewFileTree(path: string) {
+        const [path_, setPath_] = createSignal<Array<string>>([path]);
+        setStore("fileTreeViewers", (ft) => [
+          ...ft,
+          {
+            currentPath: path_,
+            setCurrentPath: setPath_,
+          },
+        ]);
+      },
+
+      setPathInFileTree(index: number, path: string) {
+        store.fileTreeViewers[index].setCurrentPath([path]);
+      },
+
+      appendPathInFileTree(index: number, path: string) {
+        store.fileTreeViewers[index].setCurrentPath([
+          ...store.fileTreeViewers[index].currentPath(),
+          path,
+        ]);
+      },
+
+      changePathDirectoryUp(index: number) {
+        store.fileTreeViewers[index].setCurrentPath(
+          store.fileTreeViewers[index]
+            .currentPath()
+            .slice(0, store.fileTreeViewers[index].currentPath().length - 1)
         );
+      },
+
+      getCurrentPathForIndex(index: number) {
+        return store.fileTreeViewers[index].currentPath;
+      },
+
+      setFileTreeToFocus(index: number) {
+        setStore("indexOfFileTreeInFocus", index);
       },
     },
   ] as const; // `as const` forces tuple type inference

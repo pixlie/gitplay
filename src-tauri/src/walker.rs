@@ -26,6 +26,7 @@ struct FileBlob {
     relative_root_path: String,
     name: String,
     is_directory: bool,
+    size: Option<usize>,
 }
 
 impl CommitFrame {
@@ -84,7 +85,7 @@ pub fn get_commit(
                         file_structure: None,
                     };
                     if with_tree {
-                        frame.file_structure = get_tree(commit);
+                        frame.file_structure = get_tree(commit, repository);
                     }
                     Ok(frame)
                 }
@@ -96,7 +97,7 @@ pub fn get_commit(
     }
 }
 
-fn get_tree(commit: &Commit) -> Option<FileTree> {
+fn get_tree(commit: &Commit, repository: &Repository) -> Option<FileTree> {
     match commit.tree() {
         Ok(tree) => {
             let mut blobs: Vec<FileBlob> = Vec::new();
@@ -107,12 +108,17 @@ fn get_tree(commit: &Commit) -> Option<FileTree> {
                         relative_root_path: relative_root.to_owned(),
                         name: item.name().unwrap().to_string(),
                         is_directory: false,
+                        size: match item.to_object(repository) {
+                            Ok(object) => Some(object.as_blob().unwrap().size()),
+                            Err(_) => None,
+                        },
                     }),
                     Some(ObjectType::Tree) => blobs.push(FileBlob {
                         object_id: item.id().to_string(),
                         relative_root_path: relative_root.to_owned(),
                         name: item.name().unwrap().to_string(),
                         is_directory: true,
+                        size: None,
                     }),
                     _ => {}
                 }

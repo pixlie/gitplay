@@ -29,8 +29,6 @@ const PlayPause: Component = () => {
     // Player can be paused from other UI elements, and then when the store changes.
     // We listen to the store status `isPlaying` and cancel our Interval so the next scene is not called
     if (!store.isPlaying && intervalId()) {
-      console.log("Pausing");
-
       clearInterval(intervalId());
     }
   });
@@ -97,14 +95,15 @@ const Timeline: Component = () => {
   createEffect(() => {
     if (store.loadedCommitsCount - store.currentCommitIndex === 25) {
       // We are approaching the end of the number of loaded commits, lets fetch new ones
-      console.log("Loading new commits");
-
       loadNextCommits();
     }
   });
 
   return (
-    <div class="fixed bottom-0 bg-gray-100 w-full pt-4 pb-2">
+    <div
+      class="fixed bottom-0 bg-gray-100 w-full pt-4 pb-2"
+      style={{ "z-index": 200 }}
+    >
       <div
         class="relative w-full bg-gray-100 h-3 py-1 px-4 cursor-pointer"
         onMouseEnter={handleTimelineEnter}
