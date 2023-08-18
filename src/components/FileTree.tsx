@@ -1,27 +1,29 @@
 import { Accessor, Component, For, createMemo, onMount } from "solid-js";
 
+import { IFileBlob } from "../types";
+import { useViewers } from "../stores/viewers";
+import { useRepository } from "../stores/repository";
+import { IPosition } from "../types";
+
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
 import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 
-import { useRepository } from "../stores/repository";
-import { IFileBlob, IPosition } from "../types";
-import { useFileContents } from "../stores/fileContents";
-import FileViewer from "./FileViewer";
-import { useFileViewers } from "../stores/viewers";
-
-interface IFileBlobItemProps extends IFileBlob {
+export interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
   indexOfFileTree: Accessor<number>;
 }
-
-const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
+export const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
   const [
     _,
-    { appendPathInFileTree, changePathDirectoryUp, setPathInNewFileTree },
-  ] = useFileViewers();
-  const [_fc, { initiateFile }] = useFileContents();
+    {
+      appendPathInFileTree,
+      changePathDirectoryUp,
+      setPathInNewFileTree,
+      initiateFile,
+    },
+  ] = useViewers();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -100,14 +102,13 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
   );
 };
 
-interface IFileListProps {
+interface IFileTreeProps {
   currentPath: Accessor<Array<string>>;
   index: Accessor<number>;
 }
-
-const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
+export const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   const [store] = useRepository();
-  const [fileViewers, { setFileTreeToFocus }] = useFileViewers();
+  const [viewers, { setFileTreeToFocus }] = useViewers();
   let isPointerDown: boolean = false;
   let posOffset: IPosition = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
@@ -117,7 +118,7 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
     if (!store.isReady) {
       return [];
     }
-    const parentTree: Array<IFileBlobItemProps> = !currentPath().length
+    const parentTree: Array<IFileBlobItemPropTypes> = !currentPath().length
       ? []
       : [
           {
@@ -208,8 +209,8 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
   });
 
   onMount(() => {
-    containerRef.style.left = `${store.fileTreeViewers.length * 30}px`;
-    containerRef.style.top = `${store.fileTreeViewers.length * 30}px`;
+    containerRef.style.left = `${viewers.fileTrees.length * 30}px`;
+    containerRef.style.top = `${viewers.fileTrees.length * 30}px`;
   });
 
   return (
@@ -217,7 +218,7 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
       class="bg-white absolute p-2 border-gray-100 border rounded-md"
       ref={containerRef}
       style={{
-        "z-index": store.indexOfFileTreeInFocus === index() ? 100 : index(),
+        "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       }}
     >
       <div
@@ -272,36 +273,3 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
     </div>
   );
 };
-
-const FileExplorer: Component = () => {
-  const [store] = useRepository();
-  const [fileViewers] = useFileViewers();
-  const [fileContents] = useFileContents();
-
-  return (
-    <div class="px-4 w-fit">
-      {store.isReady && (
-        <div class="grid grid-flow-col gap-2 mb-3">
-          <div class="pt-2 text-gray-400 text-sm">
-            Commit hash:{" "}
-            <span class="select-text cursor-text inline-block">
-              {store.commits[store.currentCommitIndex].commitId}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div class="w-full h-full relative">
-        <For each={fileViewers.fileTrees}>
-          {(x, index) => <FileList currentPath={x.currentPath} index={index} />}
-        </For>
-
-        <For each={Object.keys(fileContents.filesByObjectId)}>
-          {(key) => <FileViewer objectId={key} />}
-        </For>
-      </div>
-    </div>
-  );
-};
-
-export default FileExplorer;

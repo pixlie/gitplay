@@ -1,11 +1,10 @@
 import { Component, createEffect } from "solid-js";
 
 import Controls from "./Controls";
-import FileExplorer from "./FileExplorer";
+import Explorer from "./Explorer";
 import Log from "./Log";
 import { useRepository } from "../stores/repository";
 import Timeline from "./Timeline";
-import { FileContentsProvider } from "../stores/fileContents";
 import { ViewersProvider } from "../stores/viewers";
 
 const Player: Component = () => {
@@ -36,15 +35,13 @@ const Player: Component = () => {
             <Log />
           </div>
           <div class="flex-1">
-            <FileExplorer />
+            <Explorer />
           </div>
         </div>
       ) : (
         <div class="w-screen h-full relative" ref={explorerWindow}>
           <ViewersProvider>
-            <FileContentsProvider>
-              <FileExplorer />
-            </FileContentsProvider>
+            <Explorer />
           </ViewersProvider>
 
           <Timeline />

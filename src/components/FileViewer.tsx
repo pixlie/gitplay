@@ -1,12 +1,16 @@
-import { Component, createEffect, onCleanup } from "solid-js";
+import { Accessor, Component, createEffect, onCleanup } from "solid-js";
+
 import { IPosition } from "../types";
 import { useViewers } from "../stores/viewers";
+import { useRepository } from "../stores/repository";
 
 interface IFileViewerPropTypes {
   objectId: string;
+  index: Accessor<number>;
 }
 
-const FileViewer: Component<IFileViewerPropTypes> = ({ objectId }) => {
+const FileViewer: Component<IFileViewerPropTypes> = ({ objectId, index }) => {
+  const [store] = useRepository();
   const [viewers, { readFileContents, removeFile, setFileTreeToFocus }] =
     useViewers();
   let isPointerDown: boolean = false;
@@ -73,7 +77,7 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ objectId }) => {
       class="bg-white absolute p-2 border-gray-100 border rounded-md"
       ref={containerRef}
       style={{
-        "z-index": store.indexOfFileTreeInFocus === index() ? 100 : index(),
+        "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       }}
     >
       <div
@@ -83,7 +87,7 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ objectId }) => {
         onMouseUp={handlePointerUp}
         onPointerMove={handleMouseMove}
       >
-        {displayCurrentPath()}
+        {/* {displayCurrentPath()} */}
       </div>
       <pre>{viewers.filesByObjectId[objectId].contents}</pre>
     </div>
