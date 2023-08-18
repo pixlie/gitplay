@@ -46,6 +46,8 @@ interface IStore {
 
   fileTreeViewers: [IFileListItem];
   indexOfFileTreeInFocus?: number;
+
+  explorerDimensions: [number, number];
 }
 
 interface IRepositoryProviderPropTypes {
@@ -117,6 +119,7 @@ const getDefaultStore = () => {
         setCurrentPath: setInitialPath,
       },
     ],
+    explorerDimensions: [0, 0],
   };
   return constDefaultStore;
 };
@@ -255,6 +258,10 @@ const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
 
       pause() {
         setStore("isPlaying", false);
+      },
+
+      setExplorerDimensions(width: number, height: number) {
+        setStore("explorerDimensions", [width, height]);
       },
 
       setPathInNewFileTree(path: string) {

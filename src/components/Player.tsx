@@ -1,4 +1,4 @@
-import { Component } from "solid-js";
+import { Component, createEffect } from "solid-js";
 
 import Controls from "./Controls";
 import FileExplorer from "./FileExplorer";
@@ -7,7 +7,22 @@ import { useRepository } from "../stores/repository";
 import Timeline from "./Timeline";
 
 const Player: Component = () => {
-  const [store] = useRepository();
+  const [store, { setExplorerDimensions }] = useRepository();
+  let explorerWindow: HTMLDivElement;
+
+  createEffect(() => {
+    setExplorerDimensions(
+      explorerWindow.clientWidth - 20,
+      explorerWindow.clientHeight - 124
+    );
+
+    window.addEventListener("resize", () => {
+      setExplorerDimensions(
+        explorerWindow.clientWidth - 20,
+        explorerWindow.clientHeight - 124
+      );
+    });
+  });
 
   return (
     <div class="flex flex-col h-screen w-screen overflow-hidden select-none cursor-default">
@@ -23,7 +38,7 @@ const Player: Component = () => {
           </div>
         </div>
       ) : (
-        <div class="w-screen h-full relative">
+        <div class="w-screen h-full relative" ref={explorerWindow}>
           <FileExplorer />
 
           <Timeline />

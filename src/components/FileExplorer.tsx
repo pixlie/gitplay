@@ -1,4 +1,4 @@
-import { Accessor, Component, For, createEffect, createMemo } from "solid-js";
+import { Accessor, Component, For, createMemo, onMount } from "solid-js";
 
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
@@ -162,12 +162,29 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
 
   const handleMouseMove = (event: PointerEvent) => {
     if (isPointerDown) {
-      containerRef.style.left = `${
-        event.clientX + posOffset.x > 0 ? event.clientX + posOffset.x : 0
-      }px`;
-      containerRef.style.top = `${
-        event.clientY + posOffset.y > 0 ? event.clientY + posOffset.y : 0
-      }px`;
+      let left = 0;
+      let top = 0;
+      if (event.clientX + posOffset.x > 0) {
+        left = event.clientX + posOffset.x;
+      }
+      if (
+        event.clientX + posOffset.x >
+        store.explorerDimensions[0] - containerRef.clientWidth
+      ) {
+        left = store.explorerDimensions[0] - containerRef.clientWidth;
+      }
+      if (event.clientY + posOffset.y > 0) {
+        top = event.clientY + posOffset.y;
+      }
+      if (
+        event.clientY + posOffset.y >
+        store.explorerDimensions[1] - containerRef.clientHeight
+      ) {
+        top = store.explorerDimensions[1] - containerRef.clientHeight;
+      }
+
+      containerRef.style.left = `${left}px`;
+      containerRef.style.top = `${top}px`;
     }
   };
 
@@ -186,6 +203,11 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
         )}
       </>
     );
+  });
+
+  onMount(() => {
+    containerRef.style.left = `${store.fileTreeViewers.length * 30}px`;
+    containerRef.style.top = `${store.fileTreeViewers.length * 30}px`;
   });
 
   return (
@@ -251,30 +273,25 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
 
 const FileExplorer: Component = () => {
   const [store] = useRepository();
-
   return (
-    <>
-      <div class="px-4 w-fit">
-        {store.isReady && (
-          <div class="grid grid-flow-col gap-2 mb-3">
-            <div class="pt-2 text-gray-400 text-sm">
-              Commit hash:{" "}
-              <span class="select-text cursor-text inline-block">
-                {store.commits[store.currentCommitIndex].commitId}
-              </span>
-            </div>
+    <div class="px-4 w-fit">
+      {store.isReady && (
+        <div class="grid grid-flow-col gap-2 mb-3">
+          <div class="pt-2 text-gray-400 text-sm">
+            Commit hash:{" "}
+            <span class="select-text cursor-text inline-block">
+              {store.commits[store.currentCommitIndex].commitId}
+            </span>
           </div>
-        )}
-
-        <div class="w-full h-full relative">
-          <For each={store.fileTreeViewers}>
-            {(x, index) => (
-              <FileList currentPath={x.currentPath} index={index} />
-            )}
-          </For>
         </div>
+      )}
+
+      <div class="w-full h-full relative">
+        <For each={store.fileTreeViewers}>
+          {(x, index) => <FileList currentPath={x.currentPath} index={index} />}
+        </For>
       </div>
-    </>
+    </div>
   );
 };
 
