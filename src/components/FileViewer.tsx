@@ -1,4 +1,10 @@
-import { Accessor, Component, createEffect, onCleanup } from "solid-js";
+import {
+  Accessor,
+  Component,
+  createEffect,
+  onCleanup,
+  onMount,
+} from "solid-js";
 
 import { IPosition } from "../types";
 import { useViewers } from "../stores/viewers";
@@ -72,9 +78,14 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ objectId, index }) => {
     }
   };
 
+  onMount(() => {
+    containerRef.style.left = `${index() * 30}px`;
+    containerRef.style.top = `${index() * 30}px`;
+  });
+
   return (
     <div
-      class="bg-white absolute p-2 border-gray-100 border rounded-md"
+      class="bg-white absolute p-2 border-gray-100 border rounded-md max-w-xs"
       ref={containerRef}
       style={{
         "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
@@ -89,7 +100,9 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ objectId, index }) => {
       >
         {/* {displayCurrentPath()} */}
       </div>
-      <pre>{viewers.filesByObjectId[objectId].contents}</pre>
+      <pre class="overflow-y-scroll overflow-x-scroll">
+        <code>{viewers.filesByObjectId[objectId].contents}</code>
+      </pre>
     </div>
   );
 };

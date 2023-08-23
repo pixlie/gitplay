@@ -209,8 +209,8 @@ export const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   });
 
   onMount(() => {
-    containerRef.style.left = `${viewers.fileTrees.length * 30}px`;
-    containerRef.style.top = `${viewers.fileTrees.length * 30}px`;
+    containerRef.style.left = `${index() * 30}px`;
+    containerRef.style.top = `${index() * 30}px`;
   });
 
   return (
