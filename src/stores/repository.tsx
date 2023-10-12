@@ -136,6 +136,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           ...getDefaultStore(),
           isPathInvalid: false,
           isFetchingCommits: true,
+          isPlaying: false,
         }));
 
         invoke("open_repository", { path: store.repositoryPath })
@@ -221,18 +222,27 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
         );
       },
 
-      nextCommit() {
-        if (!store.isReady) {
-          return;
-        }
+      playTillPaused() {
+        setStore("isPlaying", true);
+        let intervalId: ReturnType<typeof setTimeout> | null = null;
 
-        if (store.currentCommitIndex >= store.commitsCount - 1) {
-          setStore("isPlaying", false);
-        } else {
+        const nextCommit = () => {
+          if (!store.isReady || !store.isPlaying) {
+            if (intervalId !== null) {
+              intervalId = null;
+            }
+            return;
+          }
+
+          if (store.currentCommitIndex >= store.commitsCount - 1) {
+            // We are already at the end of our list of commits
+            setStore("isPlaying", false);
+            return;
+          }
+
           setStore((state) => ({
             ...state,
             currentCommitIndex: state.currentCommitIndex + 1,
-            isPlaying: true,
           }));
 
           getCommit(store.commits[store.currentCommitIndex].commitId).then(
@@ -240,7 +250,10 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
               setStore("currentFileTree", response.fileTree);
             }
           );
-        }
+          intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
+        };
+
+        intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
       },
 
       pause() {
