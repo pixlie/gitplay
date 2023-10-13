@@ -10,11 +10,12 @@ import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.s
 import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 
-export interface IFileBlobItemPropTypes extends IFileBlob {
+interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
   indexOfFileTree: Accessor<number>;
 }
-export const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
+
+const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
   const [
     _,
     {
@@ -57,9 +58,11 @@ export const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
       // We have to move up the path, so we simply exclude the last part
       changePathDirectoryUp(props.indexOfFileTree());
     } else if (!!props.isDirectory) {
+      // Update the new path in the current file tree
       appendPathInFileTree(props.indexOfFileTree(), `${props.name}/`);
     } else {
-      initiateFile(props.objectId);
+      // We want to open a file and view its contents
+      initiateFile(props.currentFileTreePath() + props.name, props.objectId);
     }
   };
 
@@ -106,7 +109,8 @@ interface IFileTreeProps {
   currentPath: Accessor<Array<string>>;
   index: Accessor<number>;
 }
-export const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
+
+const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   const [store] = useRepository();
   const [viewers, { setFileTreeToFocus }] = useViewers();
   let isPointerDown: boolean = false;
@@ -118,6 +122,7 @@ export const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
     if (!store.isReady) {
       return [];
     }
+    // This is needed when we are inside a directory and want to show ".." for user to move up the path
     const parentTree: Array<IFileBlobItemPropTypes> = !currentPath().length
       ? []
       : [
@@ -133,6 +138,7 @@ export const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         ];
     const fileTree = store.currentFileTree;
 
+    // We extract only files that belong in the current path (and the parent ".." mentioned above)
     return !!fileTree
       ? [
           ...parentTree,
@@ -273,3 +279,5 @@ export const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
     </div>
   );
 };
+
+export default FileTree;

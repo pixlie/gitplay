@@ -2,6 +2,7 @@ import {
   Accessor,
   Component,
   createEffect,
+  createMemo,
   onCleanup,
   onMount,
 } from "solid-js";
@@ -11,25 +12,37 @@ import { useViewers } from "../stores/viewers";
 import { useRepository } from "../stores/repository";
 
 interface IFileViewerPropTypes {
-  objectId: string;
+  filePath: string;
   index: Accessor<number>;
 }
 
-const FileViewer: Component<IFileViewerPropTypes> = ({ objectId, index }) => {
+const FileViewer: Component<IFileViewerPropTypes> = ({ filePath, index }) => {
   const [store] = useRepository();
-  const [viewers, { readFileContents, removeFile, setFileTreeToFocus }] =
-    useViewers();
+  const [
+    viewers,
+    {
+      readFileContents,
+      removeFile,
+      setFileTreeToFocus,
+      // getCurrentPathForIndex,
+    },
+  ] = useViewers();
+
   let isPointerDown: boolean = false;
   let posOffset: IPosition = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
   let draggableRef: HTMLDivElement;
 
+  const getFileObjectId = createMemo(
+    () => viewers.filesByPath[filePath].objectId
+  );
+
   createEffect(() => {
-    readFileContents(objectId);
+    readFileContents(getFileObjectId());
   });
 
   onCleanup(() => {
-    removeFile(objectId);
+    removeFile(getFileObjectId());
   });
 
   const handlePointerDown = (event: PointerEvent) => {
@@ -85,24 +98,26 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ objectId, index }) => {
 
   return (
     <div
-      class="bg-white absolute p-2 border-gray-100 border rounded-md max-w-xs"
+      class="bg-white absolute border-gray-100 border rounded-md max-w-xs"
       ref={containerRef}
       style={{
         "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       }}
     >
       <div
-        class="pt-1 pb-2 text-sm text-gray-600 cursor-grab"
+        class="pt-1 pb-2 text-sm text-gray-600 cursor-grab bg-gray-200 pl-2"
         ref={draggableRef}
         onPointerDown={handlePointerDown}
         onMouseUp={handlePointerUp}
         onPointerMove={handleMouseMove}
       >
-        {/* {displayCurrentPath()} */}
+        {filePath}
       </div>
-      <pre class="overflow-y-scroll overflow-x-scroll">
-        <code>{viewers.filesByObjectId[objectId].contents}</code>
-      </pre>
+      <div class="p-2">
+        <pre class="overflow-y-scroll overflow-x-scroll text-xs">
+          <code>{viewers.filesByObjectId[getFileObjectId()].contents}</code>
+        </pre>
+      </div>
     </div>
   );
 };

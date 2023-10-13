@@ -5,9 +5,18 @@ import { Component, createContext, createSignal, useContext } from "solid-js";
 import { invoke } from "@tauri-apps/api";
 
 interface IStore {
-  fileTrees: Array<IFileListItem>;
+  // This keeps track of the file trees that are open in different explorer windows
+  fileTrees: IFileListItem[];
+  // This keeps track of objectIds of open file viewers
+  filesByPath: {
+    [key: string]: {
+      objectId: string;
+    };
+  };
+  // This keeps track of actual file contents visible in file viewers
   filesByObjectId: {
     [key: string]: {
+      filePath: string;
       contents: string[];
       isFetching: boolean;
     };
@@ -25,6 +34,7 @@ const getDefaultStore = (): IStore => {
         setCurrentPath: setInitialPath,
       },
     ],
+    filesByPath: {},
     filesByObjectId: {},
     indexOfFileViewerInFocus: 0,
   };
@@ -74,15 +84,27 @@ const makeViewers = (defaultStore = getDefaultStore()) => {
         setStore("indexOfFileViewerInFocus", index);
       },
 
-      initiateFile(objectId: string) {
-        if (objectId in store.filesByObjectId) {
+      initiateFile(filePath: string, objectId: string) {
+        if (
+          filePath in store.filesByPath ||
+          objectId in store.filesByObjectId
+        ) {
           return;
         }
-        setStore("filesByObjectId", {
-          ...store.filesByObjectId,
-          [objectId]: {
-            isFetching: true,
-            contents: [],
+
+        setStore({
+          ...store,
+          filesByPath: {
+            ...store.filesByPath,
+            [filePath]: { objectId },
+          },
+          filesByObjectId: {
+            ...store.filesByObjectId,
+            [objectId]: {
+              filePath,
+              isFetching: true,
+              contents: [],
+            },
           },
         });
       },
@@ -90,10 +112,11 @@ const makeViewers = (defaultStore = getDefaultStore()) => {
       readFileContents(objectId: string) {
         setStore("filesByObjectId", objectId, "isFetching", true);
         invoke("read_file_contents", { objectId }).then((response) => {
-          setStore("filesByObjectId", objectId, {
+          setStore("filesByObjectId", objectId, (value) => ({
+            ...value,
             isFetching: false,
             contents: response as string[],
-          });
+          }));
         });
       },
 
