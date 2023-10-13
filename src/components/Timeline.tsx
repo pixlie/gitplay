@@ -1,4 +1,5 @@
 import { Component, createEffect, createMemo, createSignal } from "solid-js";
+
 import Button from "./Button";
 import { useRepository } from "../stores/repository";
 
@@ -6,11 +7,10 @@ import PlayIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/play.s
 import PauseIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/pause.svg";
 import ForwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/forward-step.svg";
 import BackwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/backward-step.svg";
+import { usePlayer } from "../stores/player";
 
 const PlayPause: Component = () => {
-  const [store, { playTillPaused, pause }] = useRepository();
-  // const [intervalId, setIntervalId] =
-  //   createSignal<ReturnType<typeof setInterval>>();
+  const [store, { playTillPaused, pause }] = usePlayer();
 
   const handlePlayPause = () => {
     if (store.isPlaying) {

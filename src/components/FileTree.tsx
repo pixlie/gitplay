@@ -4,6 +4,7 @@ import { IFileBlob } from "../types";
 import { useViewers } from "../stores/viewers";
 import { useRepository } from "../stores/repository";
 import { IPosition } from "../types";
+import { usePlayer } from "../stores/player";
 
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
@@ -112,6 +113,7 @@ interface IFileTreeProps {
 
 const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   const [store] = useRepository();
+  const [player] = usePlayer();
   const [viewers, { setFileTreeToFocus }] = useViewers();
   let isPointerDown: boolean = false;
   let posOffset: IPosition = { x: 0, y: 0 };
@@ -178,18 +180,18 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
       }
       if (
         event.clientX + posOffset.x >
-        store.explorerDimensions[0] - containerRef.clientWidth
+        player.explorerDimensions[0] - containerRef.clientWidth
       ) {
-        left = store.explorerDimensions[0] - containerRef.clientWidth;
+        left = player.explorerDimensions[0] - containerRef.clientWidth;
       }
       if (event.clientY + posOffset.y > 0) {
         top = event.clientY + posOffset.y;
       }
       if (
         event.clientY + posOffset.y >
-        store.explorerDimensions[1] - containerRef.clientHeight
+        player.explorerDimensions[1] - containerRef.clientHeight
       ) {
-        top = store.explorerDimensions[1] - containerRef.clientHeight;
+        top = player.explorerDimensions[1] - containerRef.clientHeight;
       }
 
       containerRef.style.left = `${left}px`;

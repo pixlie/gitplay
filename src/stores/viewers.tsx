@@ -1,8 +1,9 @@
 import { createStore } from "solid-js/store";
-import { IFileListItem } from "../types";
 import { JSX } from "solid-js/jsx-runtime";
 import { Component, createContext, createSignal, useContext } from "solid-js";
 import { invoke } from "@tauri-apps/api";
+
+import { IFileListItem } from "../types";
 
 interface IStore {
   // This keeps track of the file trees that are open in different explorer windows

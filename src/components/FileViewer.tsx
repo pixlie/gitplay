@@ -10,6 +10,7 @@ import {
 import { IPosition } from "../types";
 import { useViewers } from "../stores/viewers";
 import { useRepository } from "../stores/repository";
+import { usePlayer } from "../stores/player";
 
 interface IFileViewerPropTypes {
   filePath: string;
@@ -18,6 +19,7 @@ interface IFileViewerPropTypes {
 
 const FileViewer: Component<IFileViewerPropTypes> = ({ filePath, index }) => {
   const [store] = useRepository();
+  const [player] = usePlayer();
   const [
     viewers,
     {
@@ -72,18 +74,18 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ filePath, index }) => {
       }
       if (
         event.clientX + posOffset.x >
-        store.explorerDimensions[0] - containerRef.clientWidth
+        player.explorerDimensions[0] - containerRef.clientWidth
       ) {
-        left = store.explorerDimensions[0] - containerRef.clientWidth;
+        left = player.explorerDimensions[0] - containerRef.clientWidth;
       }
       if (event.clientY + posOffset.y > 0) {
         top = event.clientY + posOffset.y;
       }
       if (
         event.clientY + posOffset.y >
-        store.explorerDimensions[1] - containerRef.clientHeight
+        player.explorerDimensions[1] - containerRef.clientHeight
       ) {
-        top = store.explorerDimensions[1] - containerRef.clientHeight;
+        top = player.explorerDimensions[1] - containerRef.clientHeight;
       }
 
       containerRef.style.left = `${left}px`;
