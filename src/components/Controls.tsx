@@ -1,8 +1,9 @@
 import { Component, createEffect, createSignal } from "solid-js";
 import type { JSX } from "solid-js";
 
-import { useRepository } from "../stores/repository";
 import Button from "./Button";
+import { useRepository } from "../stores/repository";
+import { usePlayer } from "../stores/player";
 
 const RepositoryForm: Component = () => {
   const [store, { setRepositoryPath, openRepository }] = useRepository();
@@ -31,7 +32,7 @@ const RepositoryForm: Component = () => {
 };
 
 const PlaySpeed: Component = () => {
-  const [store, { setPlaySpeed }] = useRepository();
+  const [store, { setPlaySpeed }] = usePlayer();
 
   return (
     <Button

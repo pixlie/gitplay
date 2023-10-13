@@ -1,12 +1,11 @@
 import type { JSX } from "solid-js";
-import { Component, createContext, createSignal, useContext } from "solid-js";
+import { Component, createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
 import {
   APIRepositoryResponse,
   ICommitFrame,
-  IFileListItem,
   IFileTree,
   isIAPICommitFrame,
 } from "../types";
@@ -29,22 +28,14 @@ interface IStore {
 
   currentBranch?: string;
   currentCommitIndex: number;
-  currentObjectId?: string;
   currentFileTree?: IFileTree;
-
-  playSpeed: number;
-  isPlaying: boolean;
 
   commits: Array<ICommitFrame>;
   commitsCount: number;
   loadedCommitsCount: number;
   isFetchingCommits: boolean;
+
   lastErrorMessage?: string;
-
-  // UI layout state
-  isCommitSidebarVisible: boolean;
-
-  explorerDimensions: [number, number];
 }
 
 interface ICommitDetails extends ICommitFrame {
@@ -92,21 +83,13 @@ const getCommit = (commitId: string): Promise<ICommitDetails> =>
   });
 
 const getDefaultStore = () => {
-  const [initialPath, setInitialPath] = createSignal<Array<string>>([]);
-
   const constDefaultStore: IStore = {
     isReady: false,
     currentCommitIndex: 0,
-    playSpeed: 4,
-    isPlaying: false,
     commits: [],
     commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
     loadedCommitsCount: 0, // How many commits have be fetched in frontend
     isFetchingCommits: false,
-
-    isCommitSidebarVisible: false,
-
-    explorerDimensions: [0, 0],
   };
   return constDefaultStore;
 };
@@ -216,58 +199,22 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
         });
       },
 
-      setPlaySpeed() {
-        setStore("playSpeed", (playSpeed) =>
-          playSpeed < 32 ? playSpeed * 2 : 1
+      incrementCurrentCommitIndex() {
+        setStore("currentCommitIndex", (value) => value + 1);
+      },
+
+      fetchCommitDetails() {
+        getCommit(store.commits[store.currentCommitIndex].commitId).then(
+          (response) => {
+            setStore("currentFileTree", response.fileTree);
+          }
         );
-      },
-
-      playTillPaused() {
-        setStore("isPlaying", true);
-        let intervalId: ReturnType<typeof setTimeout> | null = null;
-
-        const nextCommit = () => {
-          if (!store.isReady || !store.isPlaying) {
-            if (intervalId !== null) {
-              intervalId = null;
-            }
-            return;
-          }
-
-          if (store.currentCommitIndex >= store.commitsCount - 1) {
-            // We are already at the end of our list of commits
-            setStore("isPlaying", false);
-            return;
-          }
-
-          setStore((state) => ({
-            ...state,
-            currentCommitIndex: state.currentCommitIndex + 1,
-          }));
-
-          getCommit(store.commits[store.currentCommitIndex].commitId).then(
-            (response) => {
-              setStore("currentFileTree", response.fileTree);
-            }
-          );
-          intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
-        };
-
-        intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
-      },
-
-      pause() {
-        setStore("isPlaying", false);
-      },
-
-      setExplorerDimensions(width: number, height: number) {
-        setStore("explorerDimensions", [width, height]);
       },
     },
   ] as const; // `as const` forces tuple type inference
 };
 
-const repository = makeRepository();
+export const repositoryInner = makeRepository();
 
 interface IRepositoryProviderPropTypes {
   children: JSX.Element;
@@ -275,12 +222,13 @@ interface IRepositoryProviderPropTypes {
 
 type TRepositoryContext = ReturnType<typeof makeRepository>;
 
-export const RepositoryContext = createContext<TRepositoryContext>(repository);
+export const RepositoryContext =
+  createContext<TRepositoryContext>(repositoryInner);
 
 export const RepositoryProvider: Component<IRepositoryProviderPropTypes> = (
   props: IRepositoryProviderPropTypes
 ) => (
-  <RepositoryContext.Provider value={repository}>
+  <RepositoryContext.Provider value={repositoryInner}>
     {props.children}
   </RepositoryContext.Provider>
 );

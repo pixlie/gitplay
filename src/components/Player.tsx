@@ -3,12 +3,12 @@ import { Component, createEffect } from "solid-js";
 import Controls from "./Controls";
 import Explorer from "./Explorer";
 import Log from "./Log";
-import { useRepository } from "../stores/repository";
 import Timeline from "./Timeline";
 import { ViewersProvider } from "../stores/viewers";
+import { usePlayer } from "../stores/player";
 
 const Player: Component = () => {
-  const [store, { setExplorerDimensions }] = useRepository();
+  const [store, { setExplorerDimensions }] = usePlayer();
   let explorerWindow: HTMLDivElement;
 
   createEffect(() => {
