@@ -116,4 +116,20 @@ impl GitplayState {
             }
         }
     }
+
+    pub fn read_file_contents(&self, object_id: &str) -> Result<String, String> {
+        if self.repository_path.lock().unwrap().is_none() {
+            *self.last_error_message.lock().unwrap() = Some("Repositoy path is not set".to_owned());
+            return Err("Repositoy path is not set".to_owned());
+        }
+
+        let path = self.repository_path.lock().unwrap().clone().unwrap();
+        match Repository::open(path) {
+            Ok(repository) => walker::read_file_contents(&repository, object_id),
+            Err(err) => {
+                *self.last_error_message.lock().unwrap() = Some(err.message().to_string());
+                Err(err.message().to_string())
+            }
+        }
+    }
 }

@@ -1,23 +1,30 @@
 import { Accessor, Component, For, createMemo, onMount } from "solid-js";
 
+import { IFileBlob } from "../types";
+import { useViewers } from "../stores/viewers";
+import { useRepository } from "../stores/repository";
+import { IPosition } from "../types";
+
 import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
 import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 
-import { useRepository } from "../stores/repository";
-import { IFileBlob } from "../types";
-
-interface IFileBlobItemProps extends IFileBlob {
+interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
   indexOfFileTree: Accessor<number>;
 }
 
-const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
+const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
   const [
     _,
-    { appendPathInFileTree, changePathDirectoryUp, setPathInNewFileTree },
-  ] = useRepository();
+    {
+      appendPathInFileTree,
+      changePathDirectoryUp,
+      setPathInNewFileTree,
+      initiateFile,
+    },
+  ] = useViewers();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -46,12 +53,16 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
     }
   }
 
-  const handleDirectoryClick = () => {
+  const handleClick = () => {
     if (props.objectId === "RELATIVE_ROOT_PATH") {
       // We have to move up the path, so we simply exclude the last part
       changePathDirectoryUp(props.indexOfFileTree());
     } else if (!!props.isDirectory) {
+      // Update the new path in the current file tree
       appendPathInFileTree(props.indexOfFileTree(), `${props.name}/`);
+    } else {
+      // We want to open a file and view its contents
+      initiateFile(props.currentFileTreePath() + props.name, props.objectId);
     }
   };
 
@@ -62,7 +73,7 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
 
   return (
     <div class="flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100">
-      <div class="w-60 pl-2" onClick={handleDirectoryClick}>
+      <div class="w-60 pl-2" onClick={handleClick}>
         <img
           src={thumbIcon}
           alt="File type"
@@ -94,20 +105,16 @@ const FileBlobItem: Component<IFileBlobItemProps> = (props) => {
   );
 };
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface IFileListProps {
+interface IFileTreeProps {
   currentPath: Accessor<Array<string>>;
   index: Accessor<number>;
 }
 
-const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
-  const [store, { setFileTreeToFocus }] = useRepository();
+const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
+  const [store] = useRepository();
+  const [viewers, { setFileTreeToFocus }] = useViewers();
   let isPointerDown: boolean = false;
-  let posOffset: Position = { x: 0, y: 0 };
+  let posOffset: IPosition = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
   let draggableRef: HTMLDivElement;
 
@@ -115,7 +122,8 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
     if (!store.isReady) {
       return [];
     }
-    const parentTree: Array<IFileBlobItemProps> = !currentPath().length
+    // This is needed when we are inside a directory and want to show ".." for user to move up the path
+    const parentTree: Array<IFileBlobItemPropTypes> = !currentPath().length
       ? []
       : [
           {
@@ -130,6 +138,7 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
         ];
     const fileTree = store.currentFileTree;
 
+    // We extract only files that belong in the current path (and the parent ".." mentioned above)
     return !!fileTree
       ? [
           ...parentTree,
@@ -206,8 +215,8 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
   });
 
   onMount(() => {
-    containerRef.style.left = `${store.fileTreeViewers.length * 30}px`;
-    containerRef.style.top = `${store.fileTreeViewers.length * 30}px`;
+    containerRef.style.left = `${index() * 30}px`;
+    containerRef.style.top = `${index() * 30}px`;
   });
 
   return (
@@ -215,7 +224,7 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
       class="bg-white absolute p-2 border-gray-100 border rounded-md"
       ref={containerRef}
       style={{
-        "z-index": store.indexOfFileTreeInFocus === index() ? 100 : index(),
+        "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       }}
     >
       <div
@@ -271,28 +280,4 @@ const FileList: Component<IFileListProps> = ({ currentPath, index }) => {
   );
 };
 
-const FileExplorer: Component = () => {
-  const [store] = useRepository();
-  return (
-    <div class="px-4 w-fit">
-      {store.isReady && (
-        <div class="grid grid-flow-col gap-2 mb-3">
-          <div class="pt-2 text-gray-400 text-sm">
-            Commit hash:{" "}
-            <span class="select-text cursor-text inline-block">
-              {store.commits[store.currentCommitIndex].commitId}
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div class="w-full h-full relative">
-        <For each={store.fileTreeViewers}>
-          {(x, index) => <FileList currentPath={x.currentPath} index={index} />}
-        </For>
-      </div>
-    </div>
-  );
-};
-
-export default FileExplorer;
+export default FileTree;

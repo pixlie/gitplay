@@ -8,30 +8,17 @@ import ForwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid
 import BackwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/backward-step.svg";
 
 const PlayPause: Component = () => {
-  const [store, { nextCommit, pause }] = useRepository();
-  const [intervalId, setIntervalId] =
-    createSignal<ReturnType<typeof setInterval>>();
+  const [store, { playTillPaused, pause }] = useRepository();
+  // const [intervalId, setIntervalId] =
+  //   createSignal<ReturnType<typeof setInterval>>();
 
   const handlePlayPause = () => {
     if (store.isPlaying) {
       pause();
     } else {
-      if (store.loadedCommitsCount > store.currentCommitIndex) {
-        nextCommit();
-        setIntervalId(setInterval(nextCommit, 1000 / store.playSpeed));
-      } else {
-        pause();
-      }
+      playTillPaused();
     }
   };
-
-  createEffect(() => {
-    // Player can be paused from other UI elements, and then when the store changes.
-    // We listen to the store status `isPlaying` and cancel our Interval so the next scene is not called
-    if (!store.isPlaying && intervalId()) {
-      clearInterval(intervalId());
-    }
-  });
 
   return (
     <Button

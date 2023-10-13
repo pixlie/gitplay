@@ -52,6 +52,11 @@ interface IFileListItem {
   setCurrentPath: Setter<Array<string>>;
 }
 
+interface IPosition {
+  x: number;
+  y: number;
+}
+
 export type {
   APIRepositoryResponse,
   IAPIFileBlob,
@@ -61,6 +66,7 @@ export type {
   IFileTree,
   ICommitFrame,
   IFileListItem,
+  IPosition,
 };
 
 export { isIAPICommitFrame };

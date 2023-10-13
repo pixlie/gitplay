@@ -12,6 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "@tauri-apps/api": "^1.2.0",
+    "highlight.js": "^11.8.0",
     "solid-js": "^1.4.7"
   },
   "devDependencies": {

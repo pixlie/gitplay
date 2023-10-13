@@ -36,6 +36,14 @@ async fn get_commit_details(
     repo.get_commit_details(commit_id)
 }
 
+#[tauri::command]
+async fn read_file_contents(
+    object_id: &str,
+    repo: State<'_, GitplayState>,
+) -> Result<String, String> {
+    repo.read_file_contents(object_id)
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(GitplayState::new())
@@ -43,7 +51,8 @@ fn main() {
             open_repository,
             prepare_cache,
             get_commits,
-            get_commit_details
+            get_commit_details,
+            read_file_contents
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

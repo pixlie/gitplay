@@ -44,14 +44,7 @@ interface IStore {
   // UI layout state
   isCommitSidebarVisible: boolean;
 
-  fileTreeViewers: [IFileListItem];
-  indexOfFileTreeInFocus?: number;
-
   explorerDimensions: [number, number];
-}
-
-interface IRepositoryProviderPropTypes {
-  children: JSX.Element;
 }
 
 interface ICommitDetails extends ICommitFrame {
@@ -113,12 +106,6 @@ const getDefaultStore = () => {
 
     isCommitSidebarVisible: false,
 
-    fileTreeViewers: [
-      {
-        currentPath: initialPath,
-        setCurrentPath: setInitialPath,
-      },
-    ],
     explorerDimensions: [0, 0],
   };
   return constDefaultStore;
@@ -131,7 +118,7 @@ const getDefaultStore = () => {
  * @param defaultStore IStore default values
  * @returns readly IStore data and the setters/modifiers
  */
-const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
+const makeRepository = (defaultStore = getDefaultStore()) => {
   const [store, setStore] = createStore<IStore>(defaultStore);
 
   return [
@@ -149,6 +136,7 @@ const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
           ...getDefaultStore(),
           isPathInvalid: false,
           isFetchingCommits: true,
+          isPlaying: false,
         }));
 
         invoke("open_repository", { path: store.repositoryPath })
@@ -234,18 +222,27 @@ const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
         );
       },
 
-      nextCommit() {
-        if (!store.isReady) {
-          return;
-        }
+      playTillPaused() {
+        setStore("isPlaying", true);
+        let intervalId: ReturnType<typeof setTimeout> | null = null;
 
-        if (store.currentCommitIndex >= store.commitsCount - 1) {
-          setStore("isPlaying", false);
-        } else {
+        const nextCommit = () => {
+          if (!store.isReady || !store.isPlaying) {
+            if (intervalId !== null) {
+              intervalId = null;
+            }
+            return;
+          }
+
+          if (store.currentCommitIndex >= store.commitsCount - 1) {
+            // We are already at the end of our list of commits
+            setStore("isPlaying", false);
+            return;
+          }
+
           setStore((state) => ({
             ...state,
             currentCommitIndex: state.currentCommitIndex + 1,
-            isPlaying: true,
           }));
 
           getCommit(store.commits[store.currentCommitIndex].commitId).then(
@@ -253,7 +250,10 @@ const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
               setStore("currentFileTree", response.fileTree);
             }
           );
-        }
+          intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
+        };
+
+        intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
       },
 
       pause() {
@@ -263,49 +263,19 @@ const makeRepository = (defaultStore: IStore = getDefaultStore()) => {
       setExplorerDimensions(width: number, height: number) {
         setStore("explorerDimensions", [width, height]);
       },
-
-      setPathInNewFileTree(path: string) {
-        const [path_, setPath_] = createSignal<Array<string>>([path]);
-        setStore("fileTreeViewers", (ft) => [
-          ...ft,
-          {
-            currentPath: path_,
-            setCurrentPath: setPath_,
-          },
-        ]);
-      },
-
-      setPathInFileTree(index: number, path: string) {
-        store.fileTreeViewers[index].setCurrentPath([path]);
-      },
-
-      appendPathInFileTree(index: number, path: string) {
-        store.fileTreeViewers[index].setCurrentPath([
-          ...store.fileTreeViewers[index].currentPath(),
-          path,
-        ]);
-      },
-
-      changePathDirectoryUp(index: number) {
-        store.fileTreeViewers[index].setCurrentPath(
-          store.fileTreeViewers[index]
-            .currentPath()
-            .slice(0, store.fileTreeViewers[index].currentPath().length - 1)
-        );
-      },
-
-      getCurrentPathForIndex(index: number) {
-        return store.fileTreeViewers[index].currentPath;
-      },
-
-      setFileTreeToFocus(index: number) {
-        setStore("indexOfFileTreeInFocus", index);
-      },
     },
   ] as const; // `as const` forces tuple type inference
 };
 
 const repository = makeRepository();
+
+interface IRepositoryProviderPropTypes {
+  children: JSX.Element;
+}
+
+type TRepositoryContext = ReturnType<typeof makeRepository>;
+
+export const RepositoryContext = createContext<TRepositoryContext>(repository);
 
 export const RepositoryProvider: Component<IRepositoryProviderPropTypes> = (
   props: IRepositoryProviderPropTypes
@@ -315,7 +285,4 @@ export const RepositoryProvider: Component<IRepositoryProviderPropTypes> = (
   </RepositoryContext.Provider>
 );
 
-type TRepositoryContext = ReturnType<typeof makeRepository>;
-
-export const RepositoryContext = createContext<TRepositoryContext>(repository);
 export const useRepository = () => useContext(RepositoryContext);
