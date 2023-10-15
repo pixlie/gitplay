@@ -23,9 +23,10 @@ async fn prepare_cache(repo: State<'_, GitplayState>) -> Result<usize, String> {
 #[tauri::command]
 async fn get_commits(
     repo: State<'_, GitplayState>,
-    after_commit_id: Option<&str>,
+    start_index: Option<usize>,
+    count: Option<usize>,
 ) -> Result<Vec<(String, String)>, String> {
-    repo.get_commits(after_commit_id)
+    repo.get_commits(start_index, count)
 }
 
 #[tauri::command]
