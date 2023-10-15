@@ -33,6 +33,8 @@ interface IStore {
   commits: Array<ICommitFrame>;
   commitsCount: number;
   loadedCommitsCount: number;
+  lastLoadedContiguousCommitsIndex: number;
+  loadingFrameSize: number;
   isFetchingCommits: boolean;
 
   lastErrorMessage?: string;
@@ -89,6 +91,8 @@ const getDefaultStore = () => {
     commits: [],
     commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
     loadedCommitsCount: 0, // How many commits have be fetched in frontend
+    lastLoadedContiguousCommitsIndex: 0, // What is the index of the last commit that was loaded contiguously (frame by frame)
+    loadingFrameSize: 100, // How many commits are loaded in one request
     isFetchingCommits: false,
   };
   return constDefaultStore;
@@ -126,7 +130,10 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           .then(() => invoke("prepare_cache"))
           .then((response) => {
             setStore("commitsCount", response as number);
-            return invoke("get_commits");
+            return invoke("get_commits", {
+              startIndex: 0,
+              count: store.loadingFrameSize,
+            });
           })
           .then((response) => {
             const data = response as APIRepositoryResponse;
@@ -138,6 +145,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
               })),
               currentPathInFileTree: [],
               loadedCommitsCount: data.length,
+              lastLoadedContiguousCommitsIndex: 0,
               isFetchingCommits: false,
               currentCommitIndex: 0,
             }));
@@ -157,16 +165,18 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           });
       },
 
-      loadNextCommits() {
+      loadNextContiguousCommits() {
+        // This function is called when playing the log and we have to fetch the next set of 100 commits
         if (!store.isReady || store.isFetchingCommits) {
           return;
         }
         setStore("isFetchingCommits", true);
 
         invoke("get_commits", {
-          afterCommitId: store.commits.at(-1)?.commitId,
+          startIndex: store.commits.at(-1)?.commitId,
         }).then((response) => {
           const data = response as APIRepositoryResponse;
+
           setStore("commits", [
             ...store.commits,
             ...data.map((x) => ({
@@ -179,6 +189,23 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
             store.loadedCommitsCount + data.length
           );
           setStore("isFetchingCommits", false);
+        });
+      },
+
+      loadRequestedCommits(fromIndex: number) {
+        // This function is called when we seek in the timeline
+        if (
+          !store.isReady ||
+          store.isFetchingCommits ||
+          fromIndex > store.commitsCount
+        ) {
+          return;
+        }
+        setStore("isFetchingCommits", true);
+        invoke("get_commits", {
+          startIndex: store.commits.at(-1)?.commitId,
+        }).then((response) => {
+          const data = response as APIRepositoryResponse;
         });
       },
 

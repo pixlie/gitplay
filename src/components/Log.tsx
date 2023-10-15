@@ -4,7 +4,8 @@ import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
 
 const Log: Component = () => {
-  const [store, { loadNextCommits }] = useRepository();
+  const [store, { loadNextContiguousCommits: loadNextCommits }] =
+    useRepository();
   const [windowStart, setWindowStart] = createSignal<number>(0);
   const [commitsToRender, setCommitsToRender] = createSignal<number>(50);
   let commitsContainerRef: HTMLDivElement;

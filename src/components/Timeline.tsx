@@ -57,7 +57,8 @@ const Backward: Component = () => {
 
 const Timeline: Component = () => {
   const [focusPosition, setFocusPosition] = createSignal<number | null>(null);
-  const [store, { loadNextCommits }] = useRepository();
+  const [store, { loadNextContiguousCommits: loadNextCommits }] =
+    useRepository();
   const [player] = usePlayer();
 
   const handleTimelineEnter = (event: MouseEvent) => {
@@ -87,28 +88,42 @@ const Timeline: Component = () => {
     }
   });
 
-  const getCommit = createMemo(() => {
+  const getCommitOnHover = createMemo(() => {
     if (focusPosition() === null) {
       return <></>;
     }
-    const commitIndex = Math.floor(
-      store.commitsCount * (focusPosition() / player.explorerDimensions[0])
-    );
-    const commit = store.commits[commitIndex];
 
-    console.log(
-      store.commitsCount,
-      focusPosition() / player.explorerDimensions[0],
-      Math.floor(
-        store.commitsCount * (focusPosition() / player.explorerDimensions[0])
-      )
+    if (focusPosition() < 16) {
+      return <></>;
+    }
+
+    const commitIndex = Math.floor(
+      store.commitsCount *
+        ((focusPosition() - 16) / player.explorerDimensions[0])
     );
+    let commitMessage: string;
+    let commitId: string = "";
+
+    if (commitIndex < store.loadedCommitsCount) {
+      const commit = store.commits[commitIndex];
+      commitMessage = commit.commitMessage;
+      commitId = commit.commitId;
+    } else {
+      commitMessage = "loading...";
+    }
 
     return (
-      <div class="text-gray-700">
-        <div class="text-sm">{store.loadedCommitsCount}</div>
-        <div class="text-gray-500 text-sm">{commitIndex}</div>
-      </div>
+      <>
+        <div class="text-sm text-gray-500 mr-2">
+          <span>Commit</span>
+          <span class="ml-1">#{commitIndex}</span>
+        </div>
+
+        <div class="text-gray-700 text-sm">
+          <div class="whitespace-nowrap overflow-hidden">{commitMessage}</div>
+          <div class="text-gray-500">{commitId}</div>
+        </div>
+      </>
     );
   });
 
@@ -149,9 +164,8 @@ const Timeline: Component = () => {
         <PlayPause />
         <Forward />
         <Backward />
-        <div class="font-bold text-gray-500 mr-2">Commit</div>
 
-        {getCommit()}
+        {focusPosition() !== null && getCommitOnHover()}
       </div>
     </div>
   );
