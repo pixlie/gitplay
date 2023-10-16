@@ -88,26 +88,28 @@ const Timeline: Component = () => {
   });
 
   const getCommitOnHover = createMemo(() => {
-    if (focusPosition() === null) {
+    const pos = focusPosition();
+    if (pos === null) {
       return <></>;
     }
-
-    if (focusPosition() < 16) {
+    if (pos < 16) {
       return <></>;
     }
 
     const commitIndex = Math.floor(
-      store.commitsCount *
-        ((focusPosition() - 16) / player.explorerDimensions[0])
+      store.commitsCount * ((pos - 16) / player.explorerDimensions[0])
     );
     let commitMessage: string;
     let commitId: string = "";
 
-    if (commitIndex < store.fetchedCommitsCount) {
+    if (
+      Math.floor(commitIndex / store.batchSize) in store.fetchedBatchIndices
+    ) {
       const commit = store.commits[commitIndex];
       commitMessage = commit.commitMessage;
       commitId = commit.commitId;
     } else {
+      loadCommits(commitIndex);
       commitMessage = "loading...";
     }
 

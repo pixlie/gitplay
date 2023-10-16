@@ -165,36 +165,40 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           });
       },
 
-      loadCommits(fromCommitIndex?: number) {
+      loadCommits(fromCommitIndex: number) {
         // This function is called when playing the log and we have to fetch the next set of 100 commits
         if (
           !store.isReady ||
           store.isFetchingCommits ||
-          (!!fromCommitIndex && fromCommitIndex >= store.commitsCount) ||
-          store.currentCommitIndex >= store.commitsCount
+          fromCommitIndex >= store.commitsCount
         ) {
           return;
         }
         setStore("isFetchingCommits", true);
 
         invoke("get_commits", {
-          startIndex: fromCommitIndex || store.currentCommitIndex,
+          startIndex:
+            Math.floor(fromCommitIndex / store.batchSize) * store.batchSize, // Take the start of a batch
           count: store.batchSize,
         }).then((response) => {
           const data = response as APIRepositoryResponse;
 
-          setStore("commits", [
-            ...store.commits,
-            ...data.map((x) => ({
-              commitId: x[0],
-              commitMessage: x[1],
-            })),
-          ]);
-          setStore(
-            "fetchedCommitsCount",
-            store.fetchedCommitsCount + data.length
-          );
-          setStore("isFetchingCommits", false);
+          setStore({
+            ...store,
+            commits: [
+              ...store.commits,
+              ...data.map((x) => ({
+                commitId: x[0],
+                commitMessage: x[1],
+              })),
+            ],
+            fetchedCommitsCount: store.fetchedCommitsCount + data.length,
+            fetchedBatchIndices: [
+              ...store.fetchedBatchIndices,
+              Math.floor(fromCommitIndex / store.batchSize),
+            ],
+            isFetchingCommits: false,
+          });
         });
       },
 
