@@ -57,8 +57,7 @@ const Backward: Component = () => {
 
 const Timeline: Component = () => {
   const [focusPosition, setFocusPosition] = createSignal<number | null>(null);
-  const [store, { loadNextContiguousCommits: loadNextCommits }] =
-    useRepository();
+  const [store, { loadCommits }] = useRepository();
   const [player] = usePlayer();
 
   const handleTimelineEnter = (event: MouseEvent) => {
@@ -82,9 +81,9 @@ const Timeline: Component = () => {
   );
 
   createEffect(() => {
-    if (store.loadedCommitsCount - store.currentCommitIndex === 25) {
+    if (store.fetchedCommitsCount - store.currentCommitIndex === 25) {
       // We are approaching the end of the number of loaded commits, lets fetch new ones
-      loadNextCommits();
+      loadCommits(store.currentCommitIndex + 25);
     }
   });
 
@@ -104,7 +103,7 @@ const Timeline: Component = () => {
     let commitMessage: string;
     let commitId: string = "";
 
-    if (commitIndex < store.loadedCommitsCount) {
+    if (commitIndex < store.fetchedCommitsCount) {
       const commit = store.commits[commitIndex];
       commitMessage = commit.commitMessage;
       commitId = commit.commitId;

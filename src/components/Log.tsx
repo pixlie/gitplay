@@ -4,8 +4,7 @@ import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
 
 const Log: Component = () => {
-  const [store, { loadNextContiguousCommits: loadNextCommits }] =
-    useRepository();
+  const [store, { loadCommits }] = useRepository();
   const [windowStart, setWindowStart] = createSignal<number>(0);
   const [commitsToRender, setCommitsToRender] = createSignal<number>(50);
   let commitsContainerRef: HTMLDivElement;
@@ -22,9 +21,9 @@ const Log: Component = () => {
       );
       if (
         Math.floor(commitsContainerRef.scrollTop / commitItemHeight) >
-        store.loadedCommitsCount - 25
+        store.fetchedCommitsCount - 25
       ) {
-        loadNextCommits();
+        loadCommits(store.currentCommitIndex + 25);
       }
     }, 10);
   };
