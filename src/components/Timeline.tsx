@@ -8,6 +8,7 @@ import PauseIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/pause
 import ForwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/forward-step.svg";
 import BackwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/backward-step.svg";
 import { usePlayer } from "../stores/player";
+import { event } from "@tauri-apps/api";
 
 const PlayPause: Component = () => {
   const [store, { playTillPaused, pause }] = usePlayer();
@@ -57,20 +58,13 @@ const Backward: Component = () => {
 
 const Timeline: Component = () => {
   const [focusPosition, setFocusPosition] = createSignal<number | null>(null);
-  const [store, { loadCommits }] = useRepository();
+  const [store, { loadCommits, setCurrentCommitIndex }] = useRepository();
   const [player] = usePlayer();
-
-  const handleTimelineEnter = (event: MouseEvent) => {
-    setFocusPosition(event.clientX);
-  };
-
-  const handleTimelineLeave = () => {
-    setFocusPosition(null);
-  };
 
   const getViewedWidth = createMemo(
     () => `${(store.currentCommitIndex / store.commitsCount) * 100}%`
   );
+
   const getRemainingWidth = createMemo(
     () =>
       `${
@@ -89,10 +83,7 @@ const Timeline: Component = () => {
 
   const getCommitOnHover = createMemo(() => {
     const pos = focusPosition();
-    if (pos === null) {
-      return <></>;
-    }
-    if (pos < 16) {
+    if (pos === null || pos < 16 || pos > player.explorerDimensions[0] - 16) {
       return <></>;
     }
 
@@ -128,6 +119,26 @@ const Timeline: Component = () => {
     );
   });
 
+  const handleTimelineEnter = (event: MouseEvent) => {
+    setFocusPosition(event.clientX);
+  };
+
+  const handleTimelineLeave = () => {
+    setFocusPosition(null);
+  };
+
+  const handleTimelineClick = () => {
+    const pos = focusPosition();
+    if (pos === null || pos < 16 || pos > player.explorerDimensions[0] - 16) {
+      return;
+    }
+
+    const commitIndex = Math.floor(
+      store.commitsCount * ((pos - 16) / player.explorerDimensions[0])
+    );
+    setCurrentCommitIndex(commitIndex);
+  };
+
   return (
     <div
       class="fixed bottom-0 bg-gray-100 w-full pt-4 pb-2"
@@ -138,6 +149,7 @@ const Timeline: Component = () => {
         onMouseEnter={handleTimelineEnter}
         onMouseLeave={handleTimelineLeave}
         onMouseMove={handleTimelineEnter}
+        onClick={handleTimelineClick}
       >
         <div class="relative w-full flex flex-row">
           <div
