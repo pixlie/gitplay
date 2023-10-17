@@ -31,8 +31,10 @@ interface IStore {
   currentFileTree?: IFileTree;
 
   commits: Array<ICommitFrame>;
-  commitsCount: number;
-  loadedCommitsCount: number;
+  commitsCount: number; // Total count of commits in this repository, sent when repository is first opened
+  fetchedCommitsCount: number; // How many commits have be fetched in GUI
+  batchSize: number; // How many commits are fetched in one "batch" (API request)
+  fetchedBatchIndices: Array<number>; // Which batches (commits requested together) have been fetched
   isFetchingCommits: boolean;
 
   lastErrorMessage?: string;
@@ -87,8 +89,10 @@ const getDefaultStore = () => {
     isReady: false,
     currentCommitIndex: 0,
     commits: [],
-    commitsCount: 0, // Total count of commits in this repository, sent when repository is first opened
-    loadedCommitsCount: 0, // How many commits have be fetched in frontend
+    commitsCount: 0,
+    fetchedCommitsCount: 0,
+    fetchedBatchIndices: [],
+    batchSize: 400,
     isFetchingCommits: false,
   };
   return constDefaultStore;
@@ -126,7 +130,10 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           .then(() => invoke("prepare_cache"))
           .then((response) => {
             setStore("commitsCount", response as number);
-            return invoke("get_commits");
+            return invoke("get_commits", {
+              startIndex: 0,
+              count: store.batchSize,
+            });
           })
           .then((response) => {
             const data = response as APIRepositoryResponse;
@@ -137,7 +144,8 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
                 commitMessage: x[1],
               })),
               currentPathInFileTree: [],
-              loadedCommitsCount: data.length,
+              fetchedCommitsCount: data.length,
+              fetchedBatchIndices: [0],
               isFetchingCommits: false,
               currentCommitIndex: 0,
             }));
@@ -157,28 +165,40 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           });
       },
 
-      loadNextCommits() {
-        if (!store.isReady || store.isFetchingCommits) {
+      loadCommits(fromCommitIndex: number) {
+        // This function is called when playing the log and we have to fetch the next set of 100 commits
+        if (
+          !store.isReady ||
+          store.isFetchingCommits ||
+          fromCommitIndex >= store.commitsCount
+        ) {
           return;
         }
         setStore("isFetchingCommits", true);
 
         invoke("get_commits", {
-          afterCommitId: store.commits.at(-1)?.commitId,
+          startIndex:
+            Math.floor(fromCommitIndex / store.batchSize) * store.batchSize, // Take the start of a batch
+          count: store.batchSize,
         }).then((response) => {
           const data = response as APIRepositoryResponse;
-          setStore("commits", [
-            ...store.commits,
-            ...data.map((x) => ({
-              commitId: x[0],
-              commitMessage: x[1],
-            })),
-          ]);
-          setStore(
-            "loadedCommitsCount",
-            store.loadedCommitsCount + data.length
-          );
-          setStore("isFetchingCommits", false);
+
+          setStore({
+            ...store,
+            commits: [
+              ...store.commits,
+              ...data.map((x) => ({
+                commitId: x[0],
+                commitMessage: x[1],
+              })),
+            ],
+            fetchedCommitsCount: store.fetchedCommitsCount + data.length,
+            fetchedBatchIndices: [
+              ...store.fetchedBatchIndices,
+              Math.floor(fromCommitIndex / store.batchSize),
+            ],
+            isFetchingCommits: false,
+          });
         });
       },
 

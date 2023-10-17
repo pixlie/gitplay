@@ -78,24 +78,26 @@ impl GitplayState {
 
     pub fn get_commits(
         &self,
-        after_commit_id: Option<&str>,
+        start_index: Option<usize>,
+        count: Option<usize>,
     ) -> Result<Vec<(String, String)>, String> {
         if self.repository_path.lock().unwrap().is_none() {
             *self.last_error_message.lock().unwrap() = Some("Repositoy path is not set".to_owned());
             return Err("Repositoy path is not set".to_owned());
         }
 
-        let mut start_index = 0;
-        if let Some(commit_id) = after_commit_id {
-            if let Some(index) = self.commit_ids.lock().unwrap().get(commit_id) {
-                start_index = *index + 1;
-            }
-        }
-        let end_index = (start_index + 100).min(self.commits_count.lock().unwrap().unwrap());
+        // let mut start_index = 0;
+        // if let Some(commit_id) = start_index {
+        //     if let Some(index) = self.commit_ids.lock().unwrap().get(commit_id) {
+        //         start_index = *index + 1;
+        //     }
+        // }
+        let end_index = (start_index.unwrap_or(0) + count.unwrap_or(100))
+            .min(self.commits_count.lock().unwrap().unwrap());
         let mut output: Vec<(String, String)> = Vec::new();
 
         let commits = self.commits.lock().unwrap();
-        for commit in commits[start_index..end_index].iter() {
+        for commit in commits[start_index.unwrap_or(0)..end_index].iter() {
             output.push(commit.get_summary());
         }
         Ok(output)
