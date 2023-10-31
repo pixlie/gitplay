@@ -1,8 +1,15 @@
 use std::{collections::HashMap, path::PathBuf, sync::Mutex};
 
 use git2::Repository;
+use serde::Serialize;
 
-use crate::walker::{self, CommitFrame};
+use crate::walker::{self, get_sizes_for_paths_in_commit, CommitFrame};
+
+#[derive(Clone, Debug, Serialize)]
+pub struct FileSizeByCommit {
+    commit_id: String,
+    size: usize,
+}
 
 pub struct GitplayState {
     repository_path: Mutex<Option<PathBuf>>,
@@ -86,12 +93,6 @@ impl GitplayState {
             return Err("Repositoy path is not set".to_owned());
         }
 
-        // let mut start_index = 0;
-        // if let Some(commit_id) = start_index {
-        //     if let Some(index) = self.commit_ids.lock().unwrap().get(commit_id) {
-        //         start_index = *index + 1;
-        //     }
-        // }
         let end_index = (start_index.unwrap_or(0) + count.unwrap_or(100))
             .min(self.commits_count.lock().unwrap().unwrap());
         let mut output: Vec<(String, String)> = Vec::new();
@@ -112,6 +113,62 @@ impl GitplayState {
         let path = self.repository_path.lock().unwrap().clone().unwrap();
         match Repository::open(path) {
             Ok(repository) => walker::get_commit(&repository, commit_id, true),
+            Err(err) => {
+                *self.last_error_message.lock().unwrap() = Some(err.message().to_string());
+                Err(err.message().to_string())
+            }
+        }
+    }
+
+    pub fn get_sizes_for_paths(
+        &self,
+        paths: Vec<String>,
+        start_index: Option<usize>,
+        count: Option<usize>,
+    ) -> Result<HashMap<String, Vec<FileSizeByCommit>>, String> {
+        if self.repository_path.lock().unwrap().is_none() {
+            *self.last_error_message.lock().unwrap() =
+                Some("Repository path is not set".to_owned());
+            return Err("Repository path is not set".to_owned());
+        }
+
+        let end_index = (start_index.unwrap_or(0) + count.unwrap_or(100))
+            .min(self.commits_count.lock().unwrap().unwrap());
+        let mut output: HashMap<String, Vec<FileSizeByCommit>> = HashMap::new();
+
+        let commits = self.commits.lock().unwrap();
+        let path = self.repository_path.lock().unwrap().clone().unwrap();
+        match Repository::open(path) {
+            Ok(repository) => {
+                for commit in commits[start_index.unwrap_or(0)..end_index].iter() {
+                    match get_sizes_for_paths_in_commit(
+                        &repository,
+                        commit.get_id().as_str(),
+                        &paths,
+                    ) {
+                        Ok(vec_of_size_by_path) => {
+                            for size_by_path in vec_of_size_by_path {
+                                output
+                                    .entry(size_by_path.path)
+                                    .and_modify(|existing| {
+                                        existing.push(FileSizeByCommit {
+                                            commit_id: commit.get_id(),
+                                            size: size_by_path.size,
+                                        })
+                                    })
+                                    .or_insert(Vec::from([FileSizeByCommit {
+                                        commit_id: commit.get_id(),
+                                        size: size_by_path.size,
+                                    }]));
+                            }
+                        }
+                        Err(err) => {
+                            *self.last_error_message.lock().unwrap() = Some(err);
+                        }
+                    }
+                }
+                Ok(output)
+            }
             Err(err) => {
                 *self.last_error_message.lock().unwrap() = Some(err.message().to_string());
                 Err(err.message().to_string())
