@@ -122,7 +122,7 @@ impl GitplayState {
 
     pub fn get_sizes_for_paths(
         &self,
-        paths: Vec<String>,
+        folders: Vec<String>,
         start_index: Option<usize>,
         count: Option<usize>,
     ) -> Result<HashMap<String, Vec<FileSizeByCommit>>, String> {
@@ -144,7 +144,7 @@ impl GitplayState {
                     match get_sizes_for_paths_in_commit(
                         &repository,
                         commit.get_id().as_str(),
-                        &paths,
+                        &folders,
                     ) {
                         Ok(vec_of_size_by_path) => {
                             for size_by_path in vec_of_size_by_path {

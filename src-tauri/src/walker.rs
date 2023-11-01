@@ -176,7 +176,7 @@ fn get_commit_parents(commit: &Commit) -> Vec<String> {
 pub fn get_sizes_for_paths_in_commit(
     repository: &Repository,
     git_spec: &str,
-    paths: &Vec<String>,
+    folders: &Vec<String>,
 ) -> Result<Vec<FileSizeByPath>, String> {
     match repository.revparse_single(git_spec) {
         Ok(tree_obj) => match tree_obj.kind() {
@@ -187,12 +187,12 @@ pub fn get_sizes_for_paths_in_commit(
                         tree.walk(git2::TreeWalkMode::PreOrder, |relative_root, item| {
                             match item.kind() {
                                 Some(ObjectType::Blob) => {
-                                    let full_name =
-                                        relative_root.to_owned() + "/" + item.name().unwrap();
-                                    if paths.iter().any(|path| *path == full_name) {
+                                    let current_folder = relative_root.to_owned();
+                                    // We check if this file item is under one of the folders we have been requested
+                                    if folders.iter().any(|path| *path == current_folder) {
                                         match item.to_object(repository) {
                                             Ok(object) => output.push(FileSizeByPath {
-                                                path: full_name,
+                                                path: current_folder + item.name().unwrap(),
                                                 size: object.as_blob().unwrap().size(),
                                             }),
                                             Err(_) => {}

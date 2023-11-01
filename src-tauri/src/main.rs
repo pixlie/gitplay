@@ -47,12 +47,12 @@ async fn read_file_contents(
 
 #[tauri::command]
 async fn get_sizes_for_paths(
-    paths: Vec<String>,
+    folders: Vec<String>,
     start_index: Option<usize>,
     count: Option<usize>,
     repo: State<'_, GitplayState>,
 ) -> Result<HashMap<String, Vec<FileSizeByCommit>>, String> {
-    repo.get_sizes_for_paths(paths, start_index, count)
+    repo.get_sizes_for_paths(folders, start_index, count)
 }
 
 fn main() {
