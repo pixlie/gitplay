@@ -6,17 +6,17 @@ import FileTree from "./FileTree";
 import FileViewer from "./FileViewer";
 
 const Explorer: Component = () => {
-  const [store] = useRepository();
+  const [repository] = useRepository();
   const [viewers] = useViewers();
 
   return (
     <div class="px-4 w-fit">
-      {store.isReady && (
+      {repository.isReady && (
         <div class="grid grid-flow-col gap-2 mb-3">
           <div class="pt-2 text-gray-400 text-sm">
             Commit hash:{" "}
             <span class="select-text cursor-text inline-block">
-              {store.commits[store.currentCommitIndex].commitId}
+              {repository.commits[repository.currentCommitIndex].commitId}
             </span>
           </div>
         </div>

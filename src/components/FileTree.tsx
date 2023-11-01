@@ -10,6 +10,7 @@ import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.s
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
 import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
+import { useChangesStore } from "../stores/changes";
 
 interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
@@ -69,7 +70,7 @@ const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
 
   const handleDirectoryNewWindowClick = (event: MouseEvent) => {
     event.preventDefault();
-    setPathInNewFileTree(`${props.name}/`);
+    setPathInNewFileTree(`${props.currentFileTreePath()}${props.name}/`);
   };
 
   return (
@@ -112,16 +113,18 @@ interface IFileTreeProps {
 }
 
 const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
-  const [store] = useRepository();
+  const [repository] = useRepository();
   const [player] = usePlayer();
   const [viewers, { setFileTreeToFocus }] = useViewers();
+  const [_, { setFolderToTrack, fetchSizes }] = useChangesStore();
+
   let isPointerDown: boolean = false;
   let posOffset: IPosition = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
   let draggableRef: HTMLDivElement;
 
   const getFileTreeMemo = createMemo(() => {
-    if (!store.isReady) {
+    if (!repository.isReady) {
       return [];
     }
     // This is needed when we are inside a directory and want to show ".." for user to move up the path
@@ -138,7 +141,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
             indexOfFileTree: index,
           },
         ];
-    const fileTree = store.currentFileTree;
+    const fileTree = repository.currentFileTree;
 
     // We extract only files that belong in the current path (and the parent ".." mentioned above)
     return !!fileTree
@@ -219,6 +222,9 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   onMount(() => {
     containerRef.style.left = `${index() * 30}px`;
     containerRef.style.top = `${index() * 30}px`;
+
+    setFolderToTrack(currentPath().join(""));
+    fetchSizes(repository.currentCommitIndex);
   });
 
   return (
