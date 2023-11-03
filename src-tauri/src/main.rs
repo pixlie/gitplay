@@ -17,8 +17,8 @@ async fn open_repository(path: &str, repo: State<'_, GitplayState>) -> Result<St
 }
 
 #[tauri::command]
-async fn prepare_cache(repo: State<'_, GitplayState>) -> Result<usize, String> {
-    println!("prepare_cache");
+async fn prepare_cache(repo: State<'_, GitplayState>) -> Result<(usize, Vec<String>), String> {
+    print!("prepare_cache ...");
     repo.cache_commits()
 }
 
@@ -27,7 +27,7 @@ async fn get_commits(
     start_index: Option<usize>,
     count: Option<usize>,
     repo: State<'_, GitplayState>,
-) -> Result<Vec<(String, String)>, String> {
+) -> Result<HashMap<String, String>, String> {
     print!("get_commits {:?} {:?} ...", start_index, count);
     repo.get_commits(start_index, count)
 }

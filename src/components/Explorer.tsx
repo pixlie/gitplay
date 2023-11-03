@@ -16,7 +16,11 @@ const Explorer: Component = () => {
           <div class="pt-2 text-gray-400 text-sm">
             Commit hash:{" "}
             <span class="select-text cursor-text inline-block">
-              {repository.commits[repository.currentCommitIndex].commitId}
+              {
+                repository.listOfCommitHashInOrder[
+                  repository.currentCommitIndex
+                ]
+              }
             </span>
           </div>
         </div>

@@ -4,7 +4,8 @@ import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
 import {
-  APIRepositoryResponse,
+  APIPrepareCacheResponse,
+  APIGetCommitsResponse,
   ICommitFrame,
   IFileTree,
   isIAPICommitFrame,
@@ -30,7 +31,10 @@ interface IStore {
   currentCommitIndex: number;
   currentFileTree?: IFileTree;
 
-  commits: Array<ICommitFrame>;
+  listOfCommitHashInOrder: Array<string>;
+  commits: {
+    [key: string]: string;
+  };
   commitsCount: number; // Total count of commits in this repository, sent when repository is first opened
   fetchedCommitsCount: number; // How many commits have be fetched in GUI
   batchSize: number; // How many commits are fetched in one "batch" (API request)
@@ -88,7 +92,8 @@ const getDefaultStore = () => {
   const constDefaultStore: IStore = {
     isReady: false,
     currentCommitIndex: 0,
-    commits: [],
+    listOfCommitHashInOrder: [],
+    commits: {},
     commitsCount: 0,
     fetchedCommitsCount: 0,
     fetchedBatchIndices: [],
@@ -129,28 +134,30 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
         invoke("open_repository", { path: store.repositoryPath })
           .then(() => invoke("prepare_cache"))
           .then((response) => {
-            setStore("commitsCount", response as number);
+            const data = response as APIPrepareCacheResponse;
+            setStore((state) => ({
+              ...state,
+              commitsCount: data[0],
+              listOfCommitHashInOrder: data[1],
+            }));
             return invoke("get_commits", {
               startIndex: 0,
               count: store.batchSize,
             });
           })
           .then((response) => {
-            const data = response as APIRepositoryResponse;
+            const data = response as APIGetCommitsResponse;
             setStore((state) => ({
               ...state,
-              commits: data.map((x) => ({
-                commitId: x[0],
-                commitMessage: x[1],
-              })),
+              commits: data,
               currentPathInFileTree: [],
-              fetchedCommitsCount: data.length,
+              fetchedCommitsCount: Object.keys(data).length,
               fetchedBatchIndices: [0],
               isFetchingCommits: false,
               currentCommitIndex: 0,
             }));
 
-            return getCommit(data[0][0]);
+            return getCommit(store.listOfCommitHashInOrder[0]);
           })
           .then((response) => {
             setStore((state) => ({
@@ -181,24 +188,22 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
             Math.floor(fromCommitIndex / store.batchSize) * store.batchSize, // Take the start of a batch
           count: store.batchSize,
         }).then((response) => {
-          const data = response as APIRepositoryResponse;
+          const data = response as APIGetCommitsResponse;
 
-          setStore({
-            ...store,
-            commits: [
+          setStore((state) => ({
+            ...state,
+            commits: {
               ...store.commits,
-              ...data.map((x) => ({
-                commitId: x[0],
-                commitMessage: x[1],
-              })),
-            ],
-            fetchedCommitsCount: store.fetchedCommitsCount + data.length,
+              ...data,
+            },
+            fetchedCommitsCount:
+              store.fetchedCommitsCount + Object.keys(data).length,
             fetchedBatchIndices: [
               ...store.fetchedBatchIndices,
               Math.floor(fromCommitIndex / store.batchSize),
             ],
             isFetchingCommits: false,
-          });
+          }));
           console.log("fetching", store.isFetchingCommits);
         });
       },
@@ -215,9 +220,11 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           isPlaying: false,
         }));
 
-        getCommit(store.commits[commitIndex].commitId).then((response) => {
-          setStore("currentFileTree", response.fileTree);
-        });
+        getCommit(store.listOfCommitHashInOrder[commitIndex]).then(
+          (response) => {
+            setStore("currentFileTree", response.fileTree);
+          }
+        );
       },
 
       incrementCurrentCommitIndex() {
@@ -225,7 +232,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
       },
 
       fetchCommitDetails() {
-        getCommit(store.commits[store.currentCommitIndex].commitId).then(
+        getCommit(store.listOfCommitHashInOrder[store.currentCommitIndex]).then(
           (response) => {
             setStore("currentFileTree", response.fileTree);
           }

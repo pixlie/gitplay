@@ -62,12 +62,12 @@ const Log: Component = () => {
       >
         {store.isReady && (
           <div style={{ height: store.commitsCount * commitItemHeight + "px" }}>
-            {store.commits
+            {store.listOfCommitHashInOrder
               .slice(windowStart(), windowStart() + commitsToRender())
-              .map((commit, index) => (
+              .map((commitHash, index) => (
                 <Commit
-                  commitId={commit.commitId}
-                  commitMessage={commit.commitMessage}
+                  commitId={commitHash}
+                  commitMessage={store.commits[index]}
                   index={windowStart() + index}
                 />
               ))}

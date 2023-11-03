@@ -93,14 +93,13 @@ const Timeline: Component = () => {
       store.commitsCount * ((pos - 16) / player.explorerDimensions[0])
     );
     let commitMessage: string;
-    let commitId: string = "";
+    let commitHash: string = "";
 
     if (
       Math.floor(commitIndex / store.batchSize) in store.fetchedBatchIndices
     ) {
-      const commit = store.commits[commitIndex];
-      commitMessage = commit.commitMessage;
-      commitId = commit.commitId;
+      commitHash = store.listOfCommitHashInOrder[commitIndex];
+      commitMessage = store.commits[commitHash];
     } else {
       commitMessage = "loading...";
     }
@@ -114,7 +113,7 @@ const Timeline: Component = () => {
 
         <div class="text-gray-700 text-sm">
           <div class="whitespace-nowrap overflow-hidden">{commitMessage}</div>
-          <div class="text-gray-500">{commitId}</div>
+          <div class="text-gray-500">{commitHash}</div>
         </div>
       </>
     );

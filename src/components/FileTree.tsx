@@ -87,7 +87,7 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
       changes.filesByPath[props.relativeRootPath + props.name];
     if (sizesByCommitHash !== undefined) {
       if (
-        repository.commits[repository.currentCommitIndex].commitId in
+        repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
         sizesByCommitHash
       ) {
         return "bg-blue-200";

@@ -1,6 +1,7 @@
 import { Accessor, Setter } from "solid-js";
 
-type APIRepositoryResponse = Array<[string, string]>;
+type APIGetCommitsResponse = { [key: string]: string };
+type APIPrepareCacheResponse = [number, Array<string>];
 type APIFileChangesResponses = {
   [key: string]: Array<ISizeByCommitHash>;
 };
@@ -65,7 +66,8 @@ interface ISizeByCommitHash {
 }
 
 export type {
-  APIRepositoryResponse,
+  APIGetCommitsResponse,
+  APIPrepareCacheResponse,
   APIFileChangesResponses,
   IAPIFileBlob,
   IAPIFileTree,

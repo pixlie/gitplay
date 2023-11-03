@@ -31,7 +31,7 @@ impl GitplayState {
                 *self.repository_path.lock().unwrap() = Some(PathBuf::from(&path));
                 // Reset the vector of commits
                 *self.commits.lock().unwrap() = Vec::new();
-                Ok("Opened repository, loading commits".to_owned())
+                Ok("Repository path is valid".to_owned())
             }
             Err(err) => {
                 *self.last_error_message.lock().unwrap() = Some(err.message().to_string());
@@ -40,7 +40,7 @@ impl GitplayState {
         }
     }
 
-    pub fn cache_commits(&self) -> Result<usize, String> {
+    pub fn cache_commits(&self) -> Result<(usize, Vec<String>), String> {
         if self.repository_path.lock().unwrap().is_none() {
             *self.last_error_message.lock().unwrap() = Some("Repositoy path is not set".to_owned());
             return Err("Repositoy path is not set".to_owned());
@@ -49,8 +49,8 @@ impl GitplayState {
         let path = self.repository_path.lock().unwrap().clone().unwrap();
         match Repository::open(path) {
             Ok(repository) => {
-                let commits_opt = walker::load_all_commits(&repository);
-                match commits_opt {
+                let all_commits = walker::load_all_commits(&repository);
+                match all_commits {
                     Ok(commits_vec) => {
                         let len = commits_vec.len();
                         let commit_ids: HashMap<String, usize> = commits_vec
@@ -60,8 +60,10 @@ impl GitplayState {
                             .collect();
                         *self.commit_ids.lock().unwrap() = commit_ids;
                         *self.commits_count.lock().unwrap() = Some(commits_vec.len().clone());
+                        let commits_in_order = commits_vec.iter().map(|x| x.get_id()).collect();
                         *self.commits.lock().unwrap() = commits_vec;
-                        Ok(len)
+                        println!("{} cached", len);
+                        Ok((len, commits_in_order))
                     }
                     Err(err) => {
                         *self.commits_count.lock().unwrap() = None;
@@ -80,7 +82,7 @@ impl GitplayState {
         &self,
         start_index: Option<usize>,
         count: Option<usize>,
-    ) -> Result<Vec<(String, String)>, String> {
+    ) -> Result<HashMap<String, String>, String> {
         if self.repository_path.lock().unwrap().is_none() {
             *self.last_error_message.lock().unwrap() = Some("Repositoy path is not set".to_owned());
             return Err("Repositoy path is not set".to_owned());
@@ -88,11 +90,12 @@ impl GitplayState {
 
         let end_index = (start_index.unwrap_or(0) + count.unwrap_or(100))
             .min(self.commits_count.lock().unwrap().unwrap());
-        let mut output: Vec<(String, String)> = Vec::new();
+        let mut output: HashMap<String, String> = HashMap::new();
 
         let commits = self.commits.lock().unwrap();
         for commit in commits[start_index.unwrap_or(0)..end_index].iter() {
-            output.push(commit.get_summary());
+            let summary = commit.get_summary();
+            output.insert(summary.0, summary.1);
         }
         println!("finished");
         Ok(output)
