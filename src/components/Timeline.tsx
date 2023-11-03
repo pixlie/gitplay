@@ -77,6 +77,7 @@ const Timeline: Component = () => {
   createEffect(() => {
     if (store.fetchedCommitsCount - store.currentCommitIndex === 25) {
       // We are approaching the end of the number of loaded commits, lets fetch new ones
+      console.log("loading");
       loadCommits(store.currentCommitIndex + 25);
       fetchSizes(store.currentCommitIndex + 25);
     }
@@ -101,7 +102,6 @@ const Timeline: Component = () => {
       commitMessage = commit.commitMessage;
       commitId = commit.commitId;
     } else {
-      loadCommits(commitIndex);
       commitMessage = "loading...";
     }
 
@@ -122,6 +122,14 @@ const Timeline: Component = () => {
 
   const handleTimelineEnter = (event: MouseEvent) => {
     setFocusPosition(event.clientX);
+    const commitIndex = Math.floor(
+      store.commitsCount * ((event.clientX - 16) / player.explorerDimensions[0])
+    );
+    if (
+      !(Math.floor(commitIndex / store.batchSize) in store.fetchedBatchIndices)
+    ) {
+      loadCommits(commitIndex);
+    }
   };
 
   const handleTimelineLeave = () => {

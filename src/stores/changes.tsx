@@ -4,17 +4,7 @@ import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
 import { repositoryInner } from "./repository";
-
-import {
-  APIRepositoryResponse,
-  ICommitFrame,
-  IFileTree,
-  isIAPICommitFrame,
-} from "../types";
-
-interface ISizeByCommitIndex {
-  [key: number]: number;
-}
+import { APIFileChangesResponses, ISizeByCommitHash } from "../types";
 
 /**
  * Main data structure where we store file changes.
@@ -30,8 +20,8 @@ interface ISizeByCommitIndex {
  */
 interface IStore {
   folders: Array<string>;
-  sizesByCommitIndex: {
-    [key: string]: Array<ISizeByCommitIndex>;
+  filesByPath: {
+    [key: string]: Array<ISizeByCommitHash>;
   };
   fetchedBatchIndices: Array<number>;
 
@@ -43,7 +33,7 @@ interface IStore {
 const getDefaultStore = () => {
   const constDefaultStore: IStore = {
     folders: [],
-    sizesByCommitIndex: {},
+    filesByPath: {},
     fetchedBatchIndices: [],
     isFetching: false,
   };
@@ -64,8 +54,11 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
     store,
     {
       setFolderToTrack(path: string) {
-        console.log("setFolderToTrack", path);
-        setStore("folders", (state) => [...state, path]);
+        setStore("folders", (state) => {
+          return state.findIndex((x) => x === path) === -1
+            ? [...state, path]
+            : state;
+        });
       },
 
       fetchSizes(fromCommitIndex: number) {
@@ -76,7 +69,12 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
         }
         const [repository] = repositoryInner;
         setStore("isFetching", true);
-        console.log("fetchSizes");
+        console.log(
+          store.folders,
+          Math.floor(fromCommitIndex / repository.batchSize) *
+            repository.batchSize, // Take the start of a batch
+          repository.batchSize
+        );
 
         invoke("get_sizes_for_paths", {
           folders: store.folders,
@@ -85,29 +83,12 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
             repository.batchSize, // Take the start of a batch
           count: repository.batchSize,
         }).then((response) => {
-          const data = response as APIRepositoryResponse;
-          console.log(data);
+          const data = response as APIFileChangesResponses;
           setStore({
             ...store,
+            filesByPath: data,
             isFetching: false,
           });
-
-          // setStore({
-          //   ...store,
-          //   commits: [
-          //     ...store.commits,
-          //     ...data.map((x) => ({
-          //       commitId: x[0],
-          //       commitMessage: x[1],
-          //     })),
-          //   ],
-          //   fetchedCommitsCount: store.fetchedCommitsCount + data.length,
-          //   fetchedBatchIndices: [
-          //     ...store.fetchedBatchIndices,
-          //     Math.floor(fromCommitIndex / store.batchSize),
-          //   ],
-          //   isFetchingCommits: false,
-          // });
         });
       },
     },

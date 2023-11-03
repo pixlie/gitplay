@@ -1,6 +1,9 @@
 import { Accessor, Setter } from "solid-js";
 
 type APIRepositoryResponse = Array<[string, string]>;
+type APIFileChangesResponses = {
+  [key: string]: Array<ISizeByCommitHash>;
+};
 
 interface IAPIFileBlob {
   object_id: string;
@@ -57,8 +60,13 @@ interface IPosition {
   y: number;
 }
 
+interface ISizeByCommitHash {
+  [key: string]: number;
+}
+
 export type {
   APIRepositoryResponse,
+  APIFileChangesResponses,
   IAPIFileBlob,
   IAPIFileTree,
   IAPICommitFrame,
@@ -67,6 +75,7 @@ export type {
   ICommitFrame,
   IFileListItem,
   IPosition,
+  ISizeByCommitHash,
 };
 
 export { isIAPICommitFrame };

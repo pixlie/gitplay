@@ -1,4 +1,11 @@
-import { Accessor, Component, For, createMemo, onMount } from "solid-js";
+import {
+  Accessor,
+  Component,
+  For,
+  createEffect,
+  createMemo,
+  onMount,
+} from "solid-js";
 
 import { IFileBlob } from "../types";
 import { useViewers } from "../stores/viewers";
@@ -17,7 +24,7 @@ interface IFileBlobItemPropTypes extends IFileBlob {
   indexOfFileTree: Accessor<number>;
 }
 
-const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
+const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
   const [
     _,
     {
@@ -27,6 +34,8 @@ const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
       initiateFile,
     },
   ] = useViewers();
+  const [repository] = useRepository();
+  const [changes] = useChangesStore();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -73,8 +82,23 @@ const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
     setPathInNewFileTree(`${props.currentFileTreePath()}${props.name}/`);
   };
 
+  const pulseOnChange = createMemo(() => {
+    const sizesByCommitHash =
+      changes.filesByPath[props.relativeRootPath + props.name];
+    if (sizesByCommitHash !== undefined) {
+      if (
+        repository.commits[repository.currentCommitIndex].commitId in
+        sizesByCommitHash
+      ) {
+        return "bg-blue-200";
+      }
+    }
+  });
+
   return (
-    <div class="flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100">
+    <div
+      class={`flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100 ${pulseOnChange()}`}
+    >
       <div class="w-60 pl-2" onClick={handleClick}>
         <img
           src={thumbIcon}
@@ -224,6 +248,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
     containerRef.style.top = `${index() * 30}px`;
 
     setFolderToTrack(currentPath().join(""));
+    // TODO: bug - When reopening repository, all open explorers do not fetch sizes
     fetchSizes(repository.currentCommitIndex);
   });
 
@@ -253,7 +278,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
         <For each={getFileTreeMemo().filter((x) => x.isDirectory)}>
           {(x) => (
-            <FileBlobItem
+            <FileItem
               id={x.id}
               objectId={x.objectId}
               relativeRootPath={x.relativeRootPath}
@@ -267,7 +292,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
         <For each={getFileTreeMemo().filter((x) => !x.isDirectory)}>
           {(x) => (
-            <FileBlobItem
+            <FileItem
               id={x.id}
               objectId={x.objectId}
               relativeRootPath={x.relativeRootPath}

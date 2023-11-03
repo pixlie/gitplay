@@ -92,7 +92,7 @@ const getDefaultStore = () => {
     commitsCount: 0,
     fetchedCommitsCount: 0,
     fetchedBatchIndices: [],
-    batchSize: 400,
+    batchSize: 100,
     isFetchingCommits: false,
   };
   return constDefaultStore;
@@ -166,7 +166,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
       },
 
       loadCommits(fromCommitIndex: number) {
-        // This function is called when playing the log and we have to fetch the next set of 100 commits
+        // This function is called when playing the log and we have to fetch the next batch commits
         if (
           !store.isReady ||
           store.isFetchingCommits ||
@@ -199,6 +199,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
             ],
             isFetchingCommits: false,
           });
+          console.log("fetching", store.isFetchingCommits);
         });
       },
 

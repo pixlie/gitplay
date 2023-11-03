@@ -23,7 +23,7 @@ const Log: Component = () => {
         Math.floor(commitsContainerRef.scrollTop / commitItemHeight) >
         store.fetchedCommitsCount - 25
       ) {
-        loadCommits(store.currentCommitIndex + 25);
+        // loadCommits(store.currentCommitIndex + 25);
       }
     }, 10);
   };
