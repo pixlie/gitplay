@@ -1,15 +1,8 @@
 use std::{collections::HashMap, path::PathBuf, sync::Mutex};
 
 use git2::Repository;
-use serde::Serialize;
 
 use crate::walker::{self, get_sizes_for_paths_in_commit, CommitFrame};
-
-#[derive(Clone, Debug, Serialize)]
-pub struct FileSizeByCommit {
-    commit_id: String,
-    size: usize,
-}
 
 pub struct GitplayState {
     repository_path: Mutex<Option<PathBuf>>,
@@ -101,6 +94,7 @@ impl GitplayState {
         for commit in commits[start_index.unwrap_or(0)..end_index].iter() {
             output.push(commit.get_summary());
         }
+        println!("finished");
         Ok(output)
     }
 
@@ -125,7 +119,7 @@ impl GitplayState {
         folders: Vec<String>,
         start_index: Option<usize>,
         count: Option<usize>,
-    ) -> Result<HashMap<String, Vec<FileSizeByCommit>>, String> {
+    ) -> Result<HashMap<String, HashMap<String, usize>>, String> {
         if self.repository_path.lock().unwrap().is_none() {
             *self.last_error_message.lock().unwrap() =
                 Some("Repository path is not set".to_owned());
@@ -134,7 +128,8 @@ impl GitplayState {
 
         let end_index = (start_index.unwrap_or(0) + count.unwrap_or(100))
             .min(self.commits_count.lock().unwrap().unwrap());
-        let mut output: HashMap<String, Vec<FileSizeByCommit>> = HashMap::new();
+        let mut output: HashMap<String, HashMap<String, usize>> = HashMap::new();
+        let mut last_size: HashMap<String, usize> = HashMap::new();
 
         let commits = self.commits.lock().unwrap();
         let path = self.repository_path.lock().unwrap().clone().unwrap();
@@ -149,17 +144,20 @@ impl GitplayState {
                         Ok(vec_of_size_by_path) => {
                             for size_by_path in vec_of_size_by_path {
                                 output
-                                    .entry(size_by_path.path)
+                                    .entry(size_by_path.path.clone()) // Find existing entry for this file path
                                     .and_modify(|existing| {
-                                        existing.push(FileSizeByCommit {
-                                            commit_id: commit.get_id(),
-                                            size: size_by_path.size,
-                                        })
+                                        // There is existing entry for this file path
+                                        // We check if the file size in the last entry for this path is different from currnt size
+                                        if last_size[&size_by_path.path] != size_by_path.size {
+                                            // Sizes differ, so we insert new entry
+                                            existing.insert(commit.get_id(), size_by_path.size);
+                                        }
                                     })
-                                    .or_insert(Vec::from([FileSizeByCommit {
-                                        commit_id: commit.get_id(),
-                                        size: size_by_path.size,
-                                    }]));
+                                    .or_insert(HashMap::from([(
+                                        commit.get_id(),
+                                        size_by_path.size,
+                                    )]));
+                                last_size.insert(size_by_path.path, size_by_path.size);
                             }
                         }
                         Err(err) => {

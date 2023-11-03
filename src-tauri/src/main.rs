@@ -3,7 +3,7 @@
 
 use std::{collections::HashMap, path::PathBuf};
 
-use cache::{FileSizeByCommit, GitplayState};
+use cache::GitplayState;
 use tauri::{self, State};
 use walker::CommitFrame;
 
@@ -12,11 +12,13 @@ mod walker;
 
 #[tauri::command]
 async fn open_repository(path: &str, repo: State<'_, GitplayState>) -> Result<String, String> {
+    println!("open_repository");
     repo.open(PathBuf::from(path))
 }
 
 #[tauri::command]
 async fn prepare_cache(repo: State<'_, GitplayState>) -> Result<usize, String> {
+    println!("prepare_cache");
     repo.cache_commits()
 }
 
@@ -26,6 +28,7 @@ async fn get_commits(
     count: Option<usize>,
     repo: State<'_, GitplayState>,
 ) -> Result<Vec<(String, String)>, String> {
+    print!("get_commits {:?} {:?} ...", start_index, count);
     repo.get_commits(start_index, count)
 }
 
@@ -34,6 +37,7 @@ async fn get_commit_details(
     commit_id: &str,
     repo: State<'_, GitplayState>,
 ) -> Result<CommitFrame, String> {
+    println!("get_commit_details");
     repo.get_commit_details(commit_id)
 }
 
@@ -42,6 +46,7 @@ async fn read_file_contents(
     object_id: &str,
     repo: State<'_, GitplayState>,
 ) -> Result<String, String> {
+    println!("read_file_contents");
     repo.read_file_contents(object_id)
 }
 
@@ -51,7 +56,8 @@ async fn get_sizes_for_paths(
     start_index: Option<usize>,
     count: Option<usize>,
     repo: State<'_, GitplayState>,
-) -> Result<HashMap<String, Vec<FileSizeByCommit>>, String> {
+) -> Result<HashMap<String, HashMap<String, usize>>, String> {
+    println!("get_sizes_for_paths");
     repo.get_sizes_for_paths(folders, start_index, count)
 }
 
