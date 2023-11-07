@@ -22,6 +22,11 @@ struct FileTree {
     blobs: Vec<FileBlob>,
 }
 
+pub struct FileSizeByPath {
+    pub path: String,
+    pub size: usize,
+}
+
 #[derive(Clone, Debug, Serialize)]
 struct FileBlob {
     object_id: String,
@@ -166,4 +171,47 @@ fn get_commit_parents(commit: &Commit) -> Vec<String> {
         parents.push(parent_commit.id().to_string());
     }
     parents
+}
+
+pub fn get_sizes_for_paths_in_commit(
+    repository: &Repository,
+    git_spec: &str,
+    folders: &Vec<String>,
+) -> Result<Vec<FileSizeByPath>, String> {
+    match repository.revparse_single(git_spec) {
+        Ok(tree_obj) => match tree_obj.kind() {
+            Some(ObjectType::Commit) => match tree_obj.as_commit() {
+                Some(commit) => match commit.tree() {
+                    Ok(tree) => {
+                        let mut output: Vec<FileSizeByPath> = Vec::new();
+                        tree.walk(git2::TreeWalkMode::PreOrder, |relative_root, item| {
+                            match item.kind() {
+                                Some(ObjectType::Blob) => {
+                                    let current_folder = relative_root.to_owned();
+                                    // We check if this file item is under one of the folders we have been requested
+                                    if folders.iter().any(|path| *path == current_folder) {
+                                        match item.to_object(repository) {
+                                            Ok(object) => output.push(FileSizeByPath {
+                                                path: current_folder + item.name().unwrap(),
+                                                size: object.as_blob().unwrap().size(),
+                                            }),
+                                            Err(_) => {}
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                            TreeWalkResult::Ok
+                        })
+                        .unwrap();
+                        Ok(output)
+                    }
+                    Err(_) => Err("Could not extract tree of commit".to_owned()),
+                },
+                None => Err("Could not extract commit".to_owned()),
+            },
+            _ => Err("This is not a commit!".to_owned()),
+        },
+        Err(_) => Err("Could not parse the given revision specification".to_owned()),
+    }
 }

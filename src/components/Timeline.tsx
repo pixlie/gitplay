@@ -1,14 +1,13 @@
 import { Component, createEffect, createMemo, createSignal } from "solid-js";
 
-import Button from "./Button";
-import { useRepository } from "../stores/repository";
-
 import PlayIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/play.svg";
 import PauseIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/pause.svg";
 import ForwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/forward-step.svg";
 import BackwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/backward-step.svg";
+import { useRepository } from "../stores/repository";
 import { usePlayer } from "../stores/player";
-import { event } from "@tauri-apps/api";
+import { useChangesStore } from "../stores/changes";
+import Button from "./Button";
 
 const PlayPause: Component = () => {
   const [store, { playTillPaused, pause }] = usePlayer();
@@ -60,6 +59,7 @@ const Timeline: Component = () => {
   const [focusPosition, setFocusPosition] = createSignal<number | null>(null);
   const [store, { loadCommits, setCurrentCommitIndex }] = useRepository();
   const [player] = usePlayer();
+  const [_, { fetchSizes }] = useChangesStore();
 
   const getViewedWidth = createMemo(
     () => `${(store.currentCommitIndex / store.commitsCount) * 100}%`
@@ -77,7 +77,9 @@ const Timeline: Component = () => {
   createEffect(() => {
     if (store.fetchedCommitsCount - store.currentCommitIndex === 25) {
       // We are approaching the end of the number of loaded commits, lets fetch new ones
+      console.log("loading");
       loadCommits(store.currentCommitIndex + 25);
+      fetchSizes(store.currentCommitIndex + 25);
     }
   });
 
@@ -91,16 +93,14 @@ const Timeline: Component = () => {
       store.commitsCount * ((pos - 16) / player.explorerDimensions[0])
     );
     let commitMessage: string;
-    let commitId: string = "";
+    let commitHash: string = "";
 
     if (
       Math.floor(commitIndex / store.batchSize) in store.fetchedBatchIndices
     ) {
-      const commit = store.commits[commitIndex];
-      commitMessage = commit.commitMessage;
-      commitId = commit.commitId;
+      commitHash = store.listOfCommitHashInOrder[commitIndex];
+      commitMessage = store.commits[commitHash];
     } else {
-      loadCommits(commitIndex);
       commitMessage = "loading...";
     }
 
@@ -113,7 +113,7 @@ const Timeline: Component = () => {
 
         <div class="text-gray-700 text-sm">
           <div class="whitespace-nowrap overflow-hidden">{commitMessage}</div>
-          <div class="text-gray-500">{commitId}</div>
+          <div class="text-gray-500">{commitHash}</div>
         </div>
       </>
     );
@@ -121,6 +121,14 @@ const Timeline: Component = () => {
 
   const handleTimelineEnter = (event: MouseEvent) => {
     setFocusPosition(event.clientX);
+    const commitIndex = Math.floor(
+      store.commitsCount * ((event.clientX - 16) / player.explorerDimensions[0])
+    );
+    if (
+      !(Math.floor(commitIndex / store.batchSize) in store.fetchedBatchIndices)
+    ) {
+      loadCommits(commitIndex);
+    }
   };
 
   const handleTimelineLeave = () => {

@@ -1,4 +1,11 @@
-import { Accessor, Component, For, createMemo, onMount } from "solid-js";
+import {
+  Accessor,
+  Component,
+  For,
+  createEffect,
+  createMemo,
+  onMount,
+} from "solid-js";
 
 import { IFileBlob } from "../types";
 import { useViewers } from "../stores/viewers";
@@ -10,13 +17,14 @@ import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.s
 import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
 import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
+import { useChangesStore } from "../stores/changes";
 
 interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
   indexOfFileTree: Accessor<number>;
 }
 
-const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
+const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
   const [
     _,
     {
@@ -26,6 +34,8 @@ const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
       initiateFile,
     },
   ] = useViewers();
+  const [repository] = useRepository();
+  const [changes] = useChangesStore();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -69,11 +79,26 @@ const FileBlobItem: Component<IFileBlobItemPropTypes> = (props) => {
 
   const handleDirectoryNewWindowClick = (event: MouseEvent) => {
     event.preventDefault();
-    setPathInNewFileTree(`${props.name}/`);
+    setPathInNewFileTree(`${props.currentFileTreePath()}${props.name}/`);
   };
 
+  const pulseOnChange = createMemo(() => {
+    const sizesByCommitHash =
+      changes.filesByPath[props.relativeRootPath + props.name];
+    if (sizesByCommitHash !== undefined) {
+      if (
+        repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
+        sizesByCommitHash
+      ) {
+        return "bg-blue-200";
+      }
+    }
+  });
+
   return (
-    <div class="flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100">
+    <div
+      class={`flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100 ${pulseOnChange()}`}
+    >
       <div class="w-60 pl-2" onClick={handleClick}>
         <img
           src={thumbIcon}
@@ -112,16 +137,18 @@ interface IFileTreeProps {
 }
 
 const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
-  const [store] = useRepository();
+  const [repository] = useRepository();
   const [player] = usePlayer();
   const [viewers, { setFileTreeToFocus }] = useViewers();
+  const [_, { setFolderToTrack, fetchSizes }] = useChangesStore();
+
   let isPointerDown: boolean = false;
   let posOffset: IPosition = { x: 0, y: 0 };
   let containerRef: HTMLDivElement;
   let draggableRef: HTMLDivElement;
 
   const getFileTreeMemo = createMemo(() => {
-    if (!store.isReady) {
+    if (!repository.isReady) {
       return [];
     }
     // This is needed when we are inside a directory and want to show ".." for user to move up the path
@@ -138,7 +165,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
             indexOfFileTree: index,
           },
         ];
-    const fileTree = store.currentFileTree;
+    const fileTree = repository.currentFileTree;
 
     // We extract only files that belong in the current path (and the parent ".." mentioned above)
     return !!fileTree
@@ -219,6 +246,10 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   onMount(() => {
     containerRef.style.left = `${index() * 30}px`;
     containerRef.style.top = `${index() * 30}px`;
+
+    setFolderToTrack(currentPath().join(""));
+    // TODO: bug - When reopening repository, all open explorers do not fetch sizes
+    fetchSizes(repository.currentCommitIndex);
   });
 
   return (
@@ -247,7 +278,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
         <For each={getFileTreeMemo().filter((x) => x.isDirectory)}>
           {(x) => (
-            <FileBlobItem
+            <FileItem
               id={x.id}
               objectId={x.objectId}
               relativeRootPath={x.relativeRootPath}
@@ -261,7 +292,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
         <For each={getFileTreeMemo().filter((x) => !x.isDirectory)}>
           {(x) => (
-            <FileBlobItem
+            <FileItem
               id={x.id}
               objectId={x.objectId}
               relativeRootPath={x.relativeRootPath}
