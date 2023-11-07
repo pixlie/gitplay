@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api";
 
 import { ICommitFrame, IFileTree, isIAPICommitFrame } from "../types";
 import { repositoryInner } from "./repository";
+import { changesStore } from "./changes";
 
 /**
  * Main data structure for the player that users interact with.
@@ -104,8 +105,9 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
       playTillPaused() {
         const [
           repository,
-          { incrementCurrentCommitIndex, fetchCommitDetails },
+          { incrementCurrentCommitIndex, fetchCommitDetails, loadCommits },
         ] = repositoryInner;
+        const [_, { fetchSizes }] = changesStore;
 
         setStore("isPlaying", true);
         let intervalId: ReturnType<typeof setTimeout> | null = null;
@@ -126,6 +128,20 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
 
           incrementCurrentCommitIndex();
           fetchCommitDetails();
+          const ceilOfCurrentBatch =
+            Math.ceil(repository.currentCommitIndex / repository.batchSize) *
+            repository.batchSize;
+          const nextBatchIndex =
+            Math.floor(repository.currentCommitIndex / repository.batchSize) +
+            1;
+          if (
+            ceilOfCurrentBatch - repository.currentCommitIndex === 25 &&
+            !repository.fetchedBatchIndices.includes(nextBatchIndex)
+          ) {
+            // We are approaching the end of the number of loaded commits, lets fetch new ones
+            loadCommits(repository.currentCommitIndex + 25);
+            fetchSizes(repository.currentCommitIndex + 25);
+          }
           intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
         };
 
