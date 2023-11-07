@@ -37,7 +37,7 @@ async fn get_commit_details(
     commit_id: &str,
     repo: State<'_, GitplayState>,
 ) -> Result<CommitFrame, String> {
-    println!("get_commit_details");
+    println!("get_commit_details {:?}", commit_id);
     repo.get_commit_details(commit_id)
 }
 

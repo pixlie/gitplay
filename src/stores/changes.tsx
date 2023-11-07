@@ -69,12 +69,6 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
         }
         const [repository] = repositoryInner;
         setStore("isFetching", true);
-        console.log(
-          store.folders,
-          Math.floor(fromCommitIndex / repository.batchSize) *
-            repository.batchSize, // Take the start of a batch
-          repository.batchSize
-        );
 
         invoke("get_sizes_for_paths", {
           folders: store.folders,
@@ -95,7 +89,7 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
   ] as const; // `as const` forces tuple type inference
 };
 
-const changes = makeChangesStore();
+export const changesStore = makeChangesStore();
 
 interface IChangesProviderPropTypes {
   children: JSX.Element;
@@ -103,12 +97,12 @@ interface IChangesProviderPropTypes {
 
 type TChangesContext = ReturnType<typeof makeChangesStore>;
 
-export const ChangesContext = createContext<TChangesContext>(changes);
+export const ChangesContext = createContext<TChangesContext>(changesStore);
 
 export const ChangesProvider: Component<IChangesProviderPropTypes> = (
   props: IChangesProviderPropTypes
 ) => (
-  <ChangesContext.Provider value={changes}>
+  <ChangesContext.Provider value={changesStore}>
     {props.children}
   </ChangesContext.Provider>
 );

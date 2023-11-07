@@ -36,7 +36,6 @@ interface IStore {
     [key: string]: string;
   };
   commitsCount: number; // Total count of commits in this repository, sent when repository is first opened
-  fetchedCommitsCount: number; // How many commits have be fetched in GUI
   batchSize: number; // How many commits are fetched in one "batch" (API request)
   fetchedBatchIndices: Array<number>; // Which batches (commits requested together) have been fetched
   isFetchingCommits: boolean;
@@ -95,7 +94,6 @@ const getDefaultStore = () => {
     listOfCommitHashInOrder: [],
     commits: {},
     commitsCount: 0,
-    fetchedCommitsCount: 0,
     fetchedBatchIndices: [],
     batchSize: 100,
     isFetchingCommits: false,
@@ -151,7 +149,6 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
               ...state,
               commits: data,
               currentPathInFileTree: [],
-              fetchedCommitsCount: Object.keys(data).length,
               fetchedBatchIndices: [0],
               isFetchingCommits: false,
               currentCommitIndex: 0,
@@ -183,6 +180,11 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
         }
         setStore("isFetchingCommits", true);
 
+        const batchIndex = Math.floor(fromCommitIndex / store.batchSize);
+        if (store.fetchedBatchIndices.includes(batchIndex)) {
+          return;
+        }
+
         invoke("get_commits", {
           startIndex:
             Math.floor(fromCommitIndex / store.batchSize) * store.batchSize, // Take the start of a batch
@@ -190,21 +192,15 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
         }).then((response) => {
           const data = response as APIGetCommitsResponse;
 
-          setStore((state) => ({
+          setStore("commits", (state) => ({
             ...state,
-            commits: {
-              ...store.commits,
-              ...data,
-            },
-            fetchedCommitsCount:
-              store.fetchedCommitsCount + Object.keys(data).length,
-            fetchedBatchIndices: [
-              ...store.fetchedBatchIndices,
-              Math.floor(fromCommitIndex / store.batchSize),
-            ],
-            isFetchingCommits: false,
+            ...data,
           }));
-          console.log("fetching", store.isFetchingCommits);
+          setStore("fetchedBatchIndices", (state) => [
+            ...state,
+            Math.floor(fromCommitIndex / store.batchSize),
+          ]);
+          setStore("isFetchingCommits", false);
         });
       },
 

@@ -19,12 +19,12 @@ const Log: Component = () => {
       setWindowStart(
         Math.floor(commitsContainerRef.scrollTop / commitItemHeight)
       );
-      if (
-        Math.floor(commitsContainerRef.scrollTop / commitItemHeight) >
-        store.fetchedCommitsCount - 25
-      ) {
-        // loadCommits(store.currentCommitIndex + 25);
-      }
+      // if (
+      //   Math.floor(commitsContainerRef.scrollTop / commitItemHeight) >
+      //   store. - 25
+      // ) {
+      // loadCommits(store.currentCommitIndex + 25);
+      // }
     }, 10);
   };
 

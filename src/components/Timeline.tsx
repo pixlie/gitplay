@@ -59,7 +59,6 @@ const Timeline: Component = () => {
   const [focusPosition, setFocusPosition] = createSignal<number | null>(null);
   const [store, { loadCommits, setCurrentCommitIndex }] = useRepository();
   const [player] = usePlayer();
-  const [_, { fetchSizes }] = useChangesStore();
 
   const getViewedWidth = createMemo(
     () => `${(store.currentCommitIndex / store.commitsCount) * 100}%`
@@ -74,15 +73,6 @@ const Timeline: Component = () => {
       }%`
   );
 
-  createEffect(() => {
-    if (store.fetchedCommitsCount - store.currentCommitIndex === 25) {
-      // We are approaching the end of the number of loaded commits, lets fetch new ones
-      console.log("loading");
-      loadCommits(store.currentCommitIndex + 25);
-      fetchSizes(store.currentCommitIndex + 25);
-    }
-  });
-
   const getCommitOnHover = createMemo(() => {
     const pos = focusPosition();
     if (pos === null || pos < 16 || pos > player.explorerDimensions[0] - 16) {
@@ -95,10 +85,12 @@ const Timeline: Component = () => {
     let commitMessage: string;
     let commitHash: string = "";
 
+    commitHash = store.listOfCommitHashInOrder[commitIndex];
     if (
-      Math.floor(commitIndex / store.batchSize) in store.fetchedBatchIndices
+      store.fetchedBatchIndices.includes(
+        Math.floor(commitIndex / store.batchSize)
+      )
     ) {
-      commitHash = store.listOfCommitHashInOrder[commitIndex];
       commitMessage = store.commits[commitHash];
     } else {
       commitMessage = "loading...";
@@ -112,8 +104,10 @@ const Timeline: Component = () => {
         </div>
 
         <div class="text-gray-700 text-sm">
-          <div class="whitespace-nowrap overflow-hidden">{commitMessage}</div>
           <div class="text-gray-500">{commitHash}</div>
+          <div class="whitespace-nowrap overflow-hidden text-xs">
+            {commitMessage}
+          </div>
         </div>
       </>
     );
@@ -125,7 +119,9 @@ const Timeline: Component = () => {
       store.commitsCount * ((event.clientX - 16) / player.explorerDimensions[0])
     );
     if (
-      !(Math.floor(commitIndex / store.batchSize) in store.fetchedBatchIndices)
+      !store.fetchedBatchIndices.includes(
+        Math.floor(commitIndex / store.batchSize)
+      )
     ) {
       loadCommits(commitIndex);
     }
