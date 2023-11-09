@@ -24,10 +24,10 @@ const Home: Component = () => {
 
   return (
     <div class="flex flex-col w-screen h-screen place-content-center place-items-center gap-10">
-        <h1 class="text-6xl font-bold">
-          git<span class="italic">Play</span>!
-        </h1>
-        <Button label="Open a respository" onClick={handleOpenRequest}></Button>
+      <h1 class="text-6xl font-bold">
+        git<span class="italic">Play</span>!
+      </h1>
+      <Button label="Open a respository" onClick={handleOpenRequest}></Button>
     </div>
   );
 };
