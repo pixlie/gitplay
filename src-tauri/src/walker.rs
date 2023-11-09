@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::path::Path;
 
 use git2::{Commit, ObjectType, Repository, Sort, TreeWalkResult};
 use serde::Serialize;
@@ -29,11 +30,10 @@ pub struct FileSizeByPath {
 
 #[derive(Clone, Debug, Serialize)]
 struct FileBlob {
-    object_id: String,
-    relative_root_path: String,
+    path: String,
     name: String,
     is_directory: bool,
-    size: Option<usize>,
+    size: usize,
 }
 
 impl CommitFrame {
@@ -46,21 +46,43 @@ impl CommitFrame {
     }
 }
 
+pub fn get_all_branch_names(repository: &Repository) -> Vec<String> {
+    let mut output: Vec<String> = Vec::new();
+    match repository.branches(None) {
+        Ok(branches) => {
+            for branch_res in branches {
+                match branch_res {
+                    Ok((branch, _)) => match branch.name() {
+                        Ok(Some(name)) => output.push(name.to_string()),
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
+        }
+        _ => {}
+    }
+    output
+}
+
 pub fn load_all_commits(repository: &Repository) -> Result<Vec<CommitFrame>, String> {
+    // We use libgit2 to walk the Git commit log
+    // We extract each commit and make our own data structure, CommitFrame, from the commit data
     let walk = repository.revwalk();
     let mut output: Vec<CommitFrame> = Vec::new();
 
     match walk {
         Ok(mut walkable) => {
             walkable.push_head().unwrap();
-            walkable.set_sorting(Sort::TOPOLOGICAL).unwrap();
-            walkable.set_sorting(Sort::TIME).unwrap();
-            walkable.set_sorting(Sort::REVERSE).unwrap();
+            walkable
+                .set_sorting(Sort::TOPOLOGICAL | Sort::TIME | Sort::REVERSE)
+                .unwrap();
 
             for commit_res in walkable {
                 match commit_res {
                     Ok(commit) => {
-                        let commit_details_res = get_commit(repository, &commit.to_string(), false);
+                        let commit_details_res =
+                            get_commit_details(repository, &commit.to_string(), false, None);
                         match commit_details_res {
                             Ok(commit_details) => output.push(commit_details),
                             Err(_) => {}
@@ -75,11 +97,13 @@ pub fn load_all_commits(repository: &Repository) -> Result<Vec<CommitFrame>, Str
     }
 }
 
-pub fn get_commit(
+pub fn get_commit_details(
     repository: &Repository,
     git_spec: &str,
-    with_tree: bool,
+    with_file_tree: bool,
+    requested_folders: Option<Vec<String>>,
 ) -> Result<CommitFrame, String> {
+    // Get details for a single commit as our own data structure, CommitFrame
     match repository.revparse_single(git_spec) {
         Ok(tree_obj) => match tree_obj.kind() {
             Some(ObjectType::Commit) => match tree_obj.as_commit() {
@@ -91,8 +115,19 @@ pub fn get_commit(
                         time: commit.time().seconds(),
                         file_structure: None,
                     };
-                    if with_tree {
-                        frame.file_structure = get_tree(commit, repository);
+                    if with_file_tree {
+                        match requested_folders {
+                            // If we have been requested to search within certain folders then we do that
+                            Some(requested_folders) => {
+                                frame.file_structure = get_tree_for_requested_folders(
+                                    commit,
+                                    repository,
+                                    requested_folders,
+                                )
+                            }
+                            // Else we get the whole file tree
+                            None => frame.file_structure = get_tree(commit, repository),
+                        }
                     }
                     Ok(frame)
                 }
@@ -104,28 +139,78 @@ pub fn get_commit(
     }
 }
 
+fn get_tree_for_requested_folders(
+    commit: &Commit,
+    repository: &Repository,
+    requested_folders: Vec<String>,
+) -> Option<FileTree> {
+    // Get the file tree for the requested folders at the given commit
+    match commit.tree() {
+        Ok(tree) => {
+            let mut blobs: Vec<FileBlob> = Vec::new();
+            tree.walk(git2::TreeWalkMode::PreOrder, |root, item| {
+                if requested_folders.iter().any(|path| path == root) {
+                    match item.kind() {
+                        Some(ObjectType::Blob) => blobs.push(FileBlob {
+                            path: root.to_owned(),
+                            name: item.name().unwrap().to_string(),
+                            is_directory: false,
+                            size: match item.to_object(repository) {
+                                Ok(object) => object.as_blob().unwrap().size(),
+                                Err(_) => 0,
+                            },
+                        }),
+                        Some(ObjectType::Tree) => blobs.push(FileBlob {
+                            path: root.to_owned(),
+                            name: item.name().unwrap().to_string(),
+                            is_directory: true,
+                            size: 0,
+                        }),
+                        _ => {}
+                    }
+                }
+                TreeWalkResult::Ok
+            })
+            .unwrap();
+            Some(FileTree {
+                object_id: tree.id().to_string(),
+                blobs,
+            })
+        }
+        Err(_) => {
+            println!("Could not extract tree of commit");
+            None
+        }
+    }
+}
+
 fn get_tree(commit: &Commit, repository: &Repository) -> Option<FileTree> {
+    // Get the entire file tree at the given commit
     match commit.tree() {
         Ok(tree) => {
             let mut blobs: Vec<FileBlob> = Vec::new();
             tree.walk(git2::TreeWalkMode::PreOrder, |relative_root, item| {
                 match item.kind() {
                     Some(ObjectType::Blob) => blobs.push(FileBlob {
-                        object_id: item.id().to_string(),
-                        relative_root_path: relative_root.to_owned(),
-                        name: item.name().unwrap().to_string(),
+                        path: Path::new(relative_root)
+                            .join(item.name().unwrap())
+                            .to_string_lossy()
+                            .into_owned(),
+                        name: item.name().unwrap().to_owned(),
                         is_directory: false,
                         size: match item.to_object(repository) {
-                            Ok(object) => Some(object.as_blob().unwrap().size()),
-                            Err(_) => None,
+                            Ok(object) => object.as_blob().unwrap().size(),
+                            Err(_) => 0,
                         },
                     }),
                     Some(ObjectType::Tree) => blobs.push(FileBlob {
-                        object_id: item.id().to_string(),
-                        relative_root_path: relative_root.to_owned(),
-                        name: item.name().unwrap().to_string(),
+                        path: Path::new(relative_root)
+                            .join(item.name().unwrap())
+                            .to_string_lossy()
+                            .into_owned(),
+                        name: item.name().unwrap().to_owned(),
                         is_directory: true,
-                        size: None,
+                        size: 0,
                     }),
                     _ => {}
                 }
@@ -176,7 +261,7 @@ fn get_commit_parents(commit: &Commit) -> Vec<String> {
 pub fn get_sizes_for_paths_in_commit(
     repository: &Repository,
     git_spec: &str,
-    folders: &Vec<String>,
+    requested_folders: Option<Vec<String>>,
 ) -> Result<Vec<FileSizeByPath>, String> {
     match repository.revparse_single(git_spec) {
         Ok(tree_obj) => match tree_obj.kind() {
@@ -184,19 +269,30 @@ pub fn get_sizes_for_paths_in_commit(
                 Some(commit) => match commit.tree() {
                     Ok(tree) => {
                         let mut output: Vec<FileSizeByPath> = Vec::new();
-                        tree.walk(git2::TreeWalkMode::PreOrder, |relative_root, item| {
+                        tree.walk(git2::TreeWalkMode::PreOrder, |root, item| {
                             match item.kind() {
                                 Some(ObjectType::Blob) => {
-                                    let current_folder = relative_root.to_owned();
-                                    // We check if this file item is under one of the folders we have been requested
-                                    if folders.iter().any(|path| *path == current_folder) {
-                                        match item.to_object(repository) {
+                                    match &requested_folders {
+                                        Some(folders) => {
+                                            // We check if this file item is under one of the folders we have been requested
+                                            if folders.iter().any(|path| *path == root) {
+                                                match item.to_object(repository) {
+                                                    Ok(object) => output.push(FileSizeByPath {
+                                                        path: root.to_owned()
+                                                            + item.name().unwrap(),
+                                                        size: object.as_blob().unwrap().size(),
+                                                    }),
+                                                    Err(_) => {}
+                                                }
+                                            }
+                                        }
+                                        None => match item.to_object(repository) {
                                             Ok(object) => output.push(FileSizeByPath {
-                                                path: current_folder + item.name().unwrap(),
+                                                path: root.to_owned() + item.name().unwrap(),
                                                 size: object.as_blob().unwrap().size(),
                                             }),
                                             Err(_) => {}
-                                        }
+                                        },
                                     }
                                 }
                                 _ => {}

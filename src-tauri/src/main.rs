@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::io::{self, Write};
 use std::{collections::HashMap, path::PathBuf};
 
 use cache::GitplayState;
@@ -19,7 +20,8 @@ async fn open_repository(path: &str, repo: State<'_, GitplayState>) -> Result<St
 #[tauri::command]
 async fn prepare_cache(repo: State<'_, GitplayState>) -> Result<(usize, Vec<String>), String> {
     print!("prepare_cache ...");
-    repo.cache_commits()
+    io::stdout().flush().unwrap();
+    repo.prepare_cache()
 }
 
 #[tauri::command]
@@ -35,10 +37,11 @@ async fn get_commits(
 #[tauri::command]
 async fn get_commit_details(
     commit_id: &str,
+    requested_folders: Vec<String>,
     repo: State<'_, GitplayState>,
 ) -> Result<CommitFrame, String> {
     println!("get_commit_details {:?}", commit_id);
-    repo.get_commit_details(commit_id)
+    repo.get_commit_details(commit_id, requested_folders)
 }
 
 #[tauri::command]
@@ -52,13 +55,23 @@ async fn read_file_contents(
 
 #[tauri::command]
 async fn get_sizes_for_paths(
-    folders: Vec<String>,
+    requested_folders: Vec<String>,
     start_index: Option<usize>,
     count: Option<usize>,
     repo: State<'_, GitplayState>,
 ) -> Result<HashMap<String, HashMap<String, usize>>, String> {
     println!("get_sizes_for_paths");
-    repo.get_sizes_for_paths(folders, start_index, count)
+    repo.get_sizes_for_paths(requested_folders, start_index, count)
+}
+
+#[tauri::command]
+async fn get_files_ordered_by_most_modifications(
+    start_index: Option<usize>,
+    count: Option<usize>,
+    repo: State<'_, GitplayState>,
+) -> Result<Vec<(String, usize)>, String> {
+    println!("get_files_ordered_by_most_modifications");
+    repo.get_files_ordered_by_most_modifications(start_index, count)
 }
 
 fn main() {
@@ -70,7 +83,8 @@ fn main() {
             get_commits,
             get_commit_details,
             read_file_contents,
-            get_sizes_for_paths
+            get_sizes_for_paths,
+            get_files_ordered_by_most_modifications
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
