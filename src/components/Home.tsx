@@ -23,12 +23,12 @@ const Home: Component = () => {
   };
 
   return (
-    <div class="flex flex-col gap-10">
+    <>
       <h1 class="text-6xl font-bold">
         git<span class="italic">Play</span>!
       </h1>
       <Button label="Open a repository" onClick={handleOpenRequest}></Button>
-    </div>
+    </>
   );
 };
 
