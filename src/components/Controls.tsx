@@ -19,15 +19,15 @@ const RepositoryForm: Component = () => {
   };
 
   return (
-    <>
+    <div class="flex gap-1">
       <input
         type="text"
-        class="flex-1 p-1 px-2 ml-2 text-sm rounded-md border-gray-300 border focus:outline-none bg-yellow-50"
+        class="px-2 text-sm rounded-md border-gray-300 border focus:outline-none grow"
         value={store.repositoryPath || ""}
         onInput={handleInput}
       />
       <Button label="Open" onClick={handleSave} />
-    </>
+    </div>
   );
 };
 
@@ -44,10 +44,12 @@ const PlaySpeed: Component = () => {
 
 const Controls: Component = () => {
   return (
-    <div class="py-3 w-full bg-gray-100 border-b-gray-200 border z-10 flex">
+    <div class="p-2 bg-surface-container-low border-b-outline-variant border w-screen grid grid-cols-2">
       <RepositoryForm />
-      <Button label="Branch: main" />
-      <PlaySpeed />
+      <div class="flex gap-1 place-content-end">
+        <Button label="Branch: main" />
+        <PlaySpeed />
+      </div>
     </div>
   );
 };

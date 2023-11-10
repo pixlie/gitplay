@@ -26,7 +26,7 @@ const Player: Component = () => {
   });
 
   return (
-    <div class="flex flex-col h-screen w-screen overflow-hidden select-none cursor-default">
+    <>
       <Controls />
 
       {store.isCommitSidebarVisible ? (
@@ -47,7 +47,7 @@ const Player: Component = () => {
           <Timeline />
         </div>
       )}
-    </div>
+    </>
   );
 };
 
