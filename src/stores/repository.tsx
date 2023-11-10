@@ -10,6 +10,7 @@ import {
   IFileTree,
   isIAPICommitFrame,
 } from "../types";
+import { useChangesStore } from "./changes";
 
 /**
  * Main data structure for the UI application.
@@ -54,10 +55,14 @@ interface ICommitDetails extends ICommitFrame {
  * @param commitId string commit hash
  * @returns Promise of commit's detail with the file list
  */
-const getCommit = (commitId: string): Promise<ICommitDetails> =>
+const getCommit = (
+  commitId: string,
+  requestedFolders: Array<string>
+): Promise<ICommitDetails> =>
   new Promise((resolve, reject) => {
     invoke("get_commit_details", {
       commitId,
+      requestedFolders,
     })
       .then((response) => {
         if (isIAPICommitFrame(response)) {
@@ -65,9 +70,8 @@ const getCommit = (commitId: string): Promise<ICommitDetails> =>
             ? {
                 objectId: response.file_structure.object_id,
                 blobs: response.file_structure.blobs.map((x) => ({
-                  id: x.object_id,
                   objectId: x.object_id,
-                  relativeRootPath: x.relative_root_path,
+                  path: x.path,
                   name: x.name,
                   isDirectory: x.is_directory,
                   size: x.size,
@@ -151,18 +155,29 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
               currentPathInFileTree: [],
               fetchedBatchIndices: [0],
               isFetchingCommits: false,
+              isReady: true,
               currentCommitIndex: 0,
             }));
 
-            return getCommit(store.listOfCommitHashInOrder[0]);
+            return getCommit(store.listOfCommitHashInOrder[0], [""]);
           })
           .then((response) => {
+            const [
+              _,
+              {
+                fetchSizeChangesForOpenFolders,
+                fetchFilesOrderedByMostModifications,
+              },
+            ] = useChangesStore();
             setStore((state) => ({
               ...state,
               currentFileTree: response.fileTree,
               isReady: true,
               isFetchingCommits: false,
             }));
+
+            fetchSizeChangesForOpenFolders(0);
+            fetchFilesOrderedByMostModifications(0);
           })
           .catch((error) => {
             setStore("lastErrorMessage", error as string);
@@ -205,6 +220,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
       },
 
       setCurrentCommitIndex(commitIndex: number) {
+        const [changes] = useChangesStore();
         if (!store.isReady) {
           return;
         }
@@ -216,11 +232,12 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           isPlaying: false,
         }));
 
-        getCommit(store.listOfCommitHashInOrder[commitIndex]).then(
-          (response) => {
-            setStore("currentFileTree", response.fileTree);
-          }
-        );
+        getCommit(
+          store.listOfCommitHashInOrder[commitIndex],
+          changes.openFolders
+        ).then((response) => {
+          setStore("currentFileTree", response.fileTree);
+        });
       },
 
       incrementCurrentCommitIndex() {
@@ -228,11 +245,13 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
       },
 
       fetchCommitDetails() {
-        getCommit(store.listOfCommitHashInOrder[store.currentCommitIndex]).then(
-          (response) => {
-            setStore("currentFileTree", response.fileTree);
-          }
-        );
+        const [changes] = useChangesStore();
+        getCommit(
+          store.listOfCommitHashInOrder[store.currentCommitIndex],
+          changes.openFolders
+        ).then((response) => {
+          setStore("currentFileTree", response.fileTree);
+        });
       },
     },
   ] as const; // `as const` forces tuple type inference

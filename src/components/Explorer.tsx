@@ -4,6 +4,7 @@ import { useRepository } from "../stores/repository";
 import { useViewers } from "../stores/viewers";
 import FileTree from "./FileTree";
 import FileViewer from "./FileViewer";
+import SuggestedFiles from "./SuggestedFiles";
 
 const Explorer: Component = () => {
   const [repository] = useRepository();
@@ -30,6 +31,8 @@ const Explorer: Component = () => {
         <For each={viewers.fileTrees}>
           {(x, index) => <FileTree currentPath={x.currentPath} index={index} />}
         </For>
+
+        <SuggestedFiles />
 
         <For each={Object.keys(viewers.filesByPath)}>
           {(key, index) => <FileViewer filePath={key} index={index} />}

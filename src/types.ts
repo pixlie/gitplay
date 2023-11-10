@@ -3,12 +3,12 @@ import { Accessor, Setter } from "solid-js";
 type APIGetCommitsResponse = { [key: string]: string };
 type APIPrepareCacheResponse = [number, Array<string>];
 type APIFileChangesResponses = {
-  [key: string]: Array<ISizeByCommitHash>;
+  [key: string]: Array<IChangeByCommitHash>;
 };
 
 interface IAPIFileBlob {
   object_id: string;
-  relative_root_path: string;
+  path: string;
   name: string;
   is_directory: boolean;
   size?: number;
@@ -32,9 +32,8 @@ const isIAPICommitFrame = (data: unknown): data is IAPICommitFrame => {
 };
 
 interface IFileBlob {
-  id: string;
   objectId: string;
-  relativeRootPath: string;
+  path: string;
   name: string;
   isDirectory: boolean;
   size?: number;
@@ -61,7 +60,7 @@ interface IPosition {
   y: number;
 }
 
-interface ISizeByCommitHash {
+interface IChangeByCommitHash {
   [key: string]: number;
 }
 
@@ -77,7 +76,7 @@ export type {
   ICommitFrame,
   IFileListItem,
   IPosition,
-  ISizeByCommitHash,
+  IChangeByCommitHash,
 };
 
 export { isIAPICommitFrame };

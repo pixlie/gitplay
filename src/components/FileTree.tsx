@@ -84,7 +84,7 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
 
   const pulseOnChange = createMemo(() => {
     const sizesByCommitHash =
-      changes.filesByPath[props.relativeRootPath + props.name];
+      changes.fileSizeChangesByPath[props.path + props.name];
     if (sizesByCommitHash !== undefined) {
       if (
         repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
@@ -140,7 +140,8 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   const [repository] = useRepository();
   const [player] = usePlayer();
   const [viewers, { setFileTreeToFocus }] = useViewers();
-  const [_, { setFolderToTrack, fetchSizes }] = useChangesStore();
+  const [_, { setFolderToTrack, fetchSizeChangesForOpenFolders }] =
+    useChangesStore();
 
   let isPointerDown: boolean = false;
   let posOffset: IPosition = { x: 0, y: 0 };
@@ -157,24 +158,22 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
       : [
           {
             isDirectory: true,
-            id: "RELATIVE_ROOT_PATH",
             objectId: "RELATIVE_ROOT_PATH",
-            relativeRootPath: "",
+            path: "",
             name: "..",
             currentFileTreePath: currentPath,
             indexOfFileTree: index,
           },
         ];
-    const fileTree = repository.currentFileTree;
+    const fileTree = repository.currentFileTree?.blobs;
 
     // We extract only files that belong in the current path (and the parent ".." mentioned above)
     return !!fileTree
       ? [
           ...parentTree,
-          ...fileTree.blobs.filter(
+          ...fileTree.filter(
             (x) =>
-              x.relativeRootPath ===
-              (!currentPath().length ? "" : currentPath().join(""))
+              x.path === (!currentPath().length ? "" : currentPath().join(""))
           ),
         ]
       : [];
@@ -249,19 +248,19 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
     setFolderToTrack(currentPath().join(""));
     // TODO: bug - When reopening repository, all open explorers do not fetch sizes
-    fetchSizes(repository.currentCommitIndex);
+    fetchSizeChangesForOpenFolders(repository.currentCommitIndex);
   });
 
   return (
     <div
-      class="bg-white absolute p-2 border-gray-100 border rounded-md"
+      class="bg-white absolute p-1 border-gray-100 border rounded-md"
       ref={containerRef}
       style={{
         "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       }}
     >
       <div
-        class="pt-1 pb-2 text-sm text-gray-600 cursor-grab"
+        class="p-1 text-xs text-gray-600 cursor-grab"
         ref={draggableRef}
         onPointerDown={handlePointerDown}
         onMouseUp={handlePointerUp}
@@ -271,7 +270,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
       </div>
 
       <div class="border border-gray-200">
-        <div class="flex flex-row py-2 border-b bg-gray-100">
+        <div class="flex flex-row py-1 border-b bg-gray-100">
           <div class="w-60 pl-4 text-xs">Folder/File</div>
           <div class="w-12 text-xs">Size</div>
         </div>
@@ -279,9 +278,8 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         <For each={getFileTreeMemo().filter((x) => x.isDirectory)}>
           {(x) => (
             <FileItem
-              id={x.id}
               objectId={x.objectId}
-              relativeRootPath={x.relativeRootPath}
+              path={x.path}
               name={x.name}
               isDirectory={x.isDirectory}
               currentFileTreePath={currentPath}
@@ -293,9 +291,8 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         <For each={getFileTreeMemo().filter((x) => !x.isDirectory)}>
           {(x) => (
             <FileItem
-              id={x.id}
               objectId={x.objectId}
-              relativeRootPath={x.relativeRootPath}
+              path={x.path}
               name={x.name}
               isDirectory={x.isDirectory}
               size={x.size}
@@ -306,7 +303,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         </For>
       </div>
 
-      <div class="text-gray-400 text-sm pt-2">
+      <div class="text-gray-600 pt-1 text-xs">
         Items: {getFileTreeMemo().length}
       </div>
     </div>
