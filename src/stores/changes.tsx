@@ -104,7 +104,6 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
           count: repository.batchSize,
         }).then((response) => {
           const data = response as Array<[string, number]>;
-          console.log(data);
           setStore({
             ...store,
             filesOrderedByMostModifications: data,

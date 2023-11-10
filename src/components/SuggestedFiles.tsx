@@ -11,23 +11,24 @@ import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/
 import { useChangesStore } from "../stores/changes";
 import { x } from "@tauri-apps/api/path-9b1e7ad5";
 
-interface IFileBlobItemPropTypes extends IFileBlob {
-  currentFileTreePath: Accessor<Array<string>>;
-  indexOfFileTree: Accessor<number>;
+interface ISuggestedFileItemPropTypes {
+  path: string;
 }
 
-const SuggestedFileItem: Component<IFileBlobItemPropTypes> = (props) => {
-  const [
-    _,
-    {
-      appendPathInFileTree,
-      changePathDirectoryUp,
-      setPathInNewFileTree,
-      initiateFile,
-    },
-  ] = useViewers();
-  const [repository] = useRepository();
-  const [changes] = useChangesStore();
+const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
+  path,
+}) => {
+  // const [
+  //   _,
+  //   {
+  //     appendPathInFileTree,
+  //     changePathDirectoryUp,
+  //     setPathInNewFileTree,
+  //     initiateFile,
+  //   },
+  // ] = useViewers();
+  // const [repository] = useRepository();
+  // const [changes] = useChangesStore();
 
   let thumbIcon = FileIcon;
   const codeExtensions = [
@@ -45,70 +46,62 @@ const SuggestedFileItem: Component<IFileBlobItemPropTypes> = (props) => {
     "md",
   ];
 
-  if (props.isDirectory) {
-    thumbIcon = FolderIcon;
-  } else {
-    if (
-      codeExtensions.map((x) => props.name.endsWith(`.${x}`)).filter((x) => x)
-        .length
-    ) {
-      thumbIcon = CodeIcon;
-    }
-  }
+  // if (props.isDirectory) {
+  //   thumbIcon = FolderIcon;
+  // } else {
+  //   if (
+  //     codeExtensions.map((x) => props.name.endsWith(`.${x}`)).filter((x) => x)
+  //       .length
+  //   ) {
+  //     thumbIcon = CodeIcon;
+  //   }
+  // }
 
-  const handleClick = () => {
-    if (props.objectId === "RELATIVE_ROOT_PATH") {
-      // We have to move up the path, so we simply exclude the last part
-      changePathDirectoryUp(props.indexOfFileTree());
-    } else if (!!props.isDirectory) {
-      // Update the new path in the current file tree
-      appendPathInFileTree(props.indexOfFileTree(), `${props.name}/`);
-    } else {
-      // We want to open a file and view its contents
-      initiateFile(props.currentFileTreePath() + props.name, props.objectId);
-    }
-  };
+  // const handleClick = () => {
+  //   if (props.objectId === "RELATIVE_ROOT_PATH") {
+  //     // We have to move up the path, so we simply exclude the last part
+  //     changePathDirectoryUp(props.indexOfFileTree());
+  //   } else if (!!props.isDirectory) {
+  //     // Update the new path in the current file tree
+  //     appendPathInFileTree(props.indexOfFileTree(), `${props.name}/`);
+  //   } else {
+  //     // We want to open a file and view its contents
+  //     initiateFile(props.currentFileTreePath() + props.name, props.objectId);
+  //   }
+  // };
 
-  const handleDirectoryNewWindowClick = (event: MouseEvent) => {
-    event.preventDefault();
-    setPathInNewFileTree(`${props.currentFileTreePath()}${props.name}/`);
-  };
+  // const handleDirectoryNewWindowClick = (event: MouseEvent) => {
+  //   event.preventDefault();
+  //   setPathInNewFileTree(`${props.currentFileTreePath()}${props.name}/`);
+  // };
 
-  const pulseOnChange = createMemo(() => {
-    const sizesByCommitHash =
-      changes.fileSizeChangesByPath[props.path + props.name];
-    if (sizesByCommitHash !== undefined) {
-      if (
-        repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
-        sizesByCommitHash
-      ) {
-        return "bg-blue-200";
-      }
-    }
-  });
+  // const pulseOnChange = createMemo(() => {
+  //   const sizesByCommitHash =
+  //     changes.fileSizeChangesByPath[props.path + props.name];
+  //   if (sizesByCommitHash !== undefined) {
+  //     if (
+  //       repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
+  //       sizesByCommitHash
+  //     ) {
+  //       return "bg-blue-200";
+  //     }
+  //   }
+  // });
 
   return (
     <div
-      class={`flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100 ${pulseOnChange()}`}
+      class={`flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100`}
     >
-      <div class="w-60 pl-2" onClick={handleClick}>
+      <div class="w-60 pl-2">
         <img
           src={thumbIcon}
           alt="File type"
           class="px-2 h-6 opacity-30 w-10 float-left"
         />
-        <span
-          class={`w-48 text-sm overflow-hidden ${
-            props.name.startsWith(".") &&
-            props.objectId !== "RELATIVE_ROOT_PATH" &&
-            "text-gray-400"
-          }`}
-        >
-          {props.name}
-        </span>
+        <span class={`w-48 text-sm overflow-hidden`}>{path}</span>
       </div>
       <div class="w-12 text-sm text-gray-400">
-        {props.size ? (
+        {/* {props.size ? (
           <>{props.size}</>
         ) : (
           <img
@@ -117,7 +110,7 @@ const SuggestedFileItem: Component<IFileBlobItemPropTypes> = (props) => {
             class="h-3 opacity-30 px-1 mt-1"
             onClick={handleDirectoryNewWindowClick}
           />
-        )}
+        )} */}
       </div>
     </div>
   );
@@ -125,21 +118,63 @@ const SuggestedFileItem: Component<IFileBlobItemPropTypes> = (props) => {
 
 interface ISuggestedFileContainerProps {
   path: string;
+  items: Array<[string, number]>;
 }
 
 const SuggestedFileContainer: Component<ISuggestedFileContainerProps> = ({
   path,
+  items,
 }) => {
-  return <div>{path}</div>;
+  return (
+    <div
+      class="bg-white absolute p-1 border-gray-100 border rounded-md opacity-60"
+      // style={{
+      //   "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
+      // }}
+    >
+      <div class="p-1 text-xs text-gray-600 cursor-grab">{path}</div>
+
+      <div class="border border-gray-200">
+        <div class="flex flex-row py-1 border-b bg-gray-100">
+          <div class="w-60 pl-4 text-xs">Folder/File</div>
+          <div class="w-12 text-xs">Size</div>
+        </div>
+
+        <For each={items}>{(x) => <SuggestedFileItem path={x[0]} />}</For>
+      </div>
+
+      <div class="text-gray-600 pt-1 text-xs">
+        {/* Items: {getFileTreeMemo().length} */}
+      </div>
+    </div>
+  );
 };
 
 const SuggestedFiles: Component = () => {
   const [changes] = useChangesStore();
 
-  console.log(changes.filesOrderedByMostModifications.map((x) => x));
+  const getFilesOrderedByMostModificationsGroupedByPath = createMemo(() => {
+    let changesGroupedByPath: Array<[string, Array<[string, number]>]> = [];
+    for (const change of changes.filesOrderedByMostModifications) {
+      // Get the path of the file
+      const path = change[0].split("/").slice(0, -1).join("/");
+      const existingIndex = changesGroupedByPath.findIndex(
+        (x) => x[0] === path
+      );
+      if (existingIndex !== -1) {
+        // We already have this path, so we just add the file to the array
+        changesGroupedByPath[existingIndex][1].push(change);
+      } else {
+        // We don't have this path, so we create a new entry
+        changesGroupedByPath.push([path, [change]]);
+      }
+    }
+    return changesGroupedByPath;
+  });
+
   return (
-    <For each={changes.filesOrderedByMostModifications}>
-      {(x, index) => <SuggestedFileContainer path={x[0]} />}
+    <For each={getFilesOrderedByMostModificationsGroupedByPath()}>
+      {(x, index) => <SuggestedFileContainer path={x[0]} items={x[1]} />}
     </For>
   );
 };
