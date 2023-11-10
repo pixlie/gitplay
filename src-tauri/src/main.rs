@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::io::{self, Write};
 use std::{collections::HashMap, path::PathBuf};
 
 use cache::GitplayState;
@@ -19,9 +18,12 @@ async fn open_repository(path: &str, repo: State<'_, GitplayState>) -> Result<St
 
 #[tauri::command]
 async fn prepare_cache(repo: State<'_, GitplayState>) -> Result<(usize, Vec<String>), String> {
-    print!("prepare_cache ...");
-    io::stdout().flush().unwrap();
-    repo.prepare_cache()
+    let output = repo.prepare_cache();
+    println!(
+        "prepare_cache [count - {:?}] completed",
+        output.as_ref().unwrap().0
+    );
+    output
 }
 
 #[tauri::command]
@@ -30,8 +32,9 @@ async fn get_commits(
     count: Option<usize>,
     repo: State<'_, GitplayState>,
 ) -> Result<HashMap<String, String>, String> {
-    print!("get_commits {:?} {:?} ...", start_index, count);
-    repo.get_commits(start_index, count)
+    let output = repo.get_commits(start_index, count);
+    println!("get_commits {:?} {:?} completed", start_index, count);
+    output
 }
 
 #[tauri::command]
@@ -40,8 +43,9 @@ async fn get_commit_details(
     requested_folders: Vec<String>,
     repo: State<'_, GitplayState>,
 ) -> Result<CommitFrame, String> {
-    println!("get_commit_details {:?}", commit_id);
-    repo.get_commit_details(commit_id, requested_folders)
+    let output = repo.get_commit_details(commit_id, requested_folders);
+    println!("get_commit_details, {:?} completed", commit_id);
+    output
 }
 
 #[tauri::command]
@@ -49,8 +53,9 @@ async fn read_file_contents(
     object_id: &str,
     repo: State<'_, GitplayState>,
 ) -> Result<String, String> {
-    println!("read_file_contents");
-    repo.read_file_contents(object_id)
+    let output = repo.read_file_contents(object_id);
+    println!("read_file_contents, {:?} completed", object_id);
+    output
 }
 
 #[tauri::command]
@@ -60,8 +65,12 @@ async fn get_sizes_for_paths(
     count: Option<usize>,
     repo: State<'_, GitplayState>,
 ) -> Result<HashMap<String, HashMap<String, usize>>, String> {
-    println!("get_sizes_for_paths");
-    repo.get_sizes_for_paths(requested_folders, start_index, count)
+    let output = repo.get_sizes_for_paths(requested_folders.clone(), start_index, count);
+    println!(
+        "get_sizes_for_paths, {:?}, {:?}, {:?} completed",
+        requested_folders, start_index, count
+    );
+    output
 }
 
 #[tauri::command]
@@ -70,8 +79,12 @@ async fn get_files_ordered_by_most_modifications(
     count: Option<usize>,
     repo: State<'_, GitplayState>,
 ) -> Result<Vec<(String, usize)>, String> {
-    println!("get_files_ordered_by_most_modifications");
-    repo.get_files_ordered_by_most_modifications(start_index, count)
+    let output = repo.get_files_ordered_by_most_modifications(start_index, count);
+    println!(
+        "get_files_ordered_by_most_modifications, {:?}, {:?} completed",
+        start_index, count
+    );
+    output
 }
 
 fn main() {

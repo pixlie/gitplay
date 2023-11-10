@@ -30,6 +30,7 @@ pub struct FileSizeByPath {
 
 #[derive(Clone, Debug, Serialize)]
 struct FileBlob {
+    object_id: String,
     path: String,
     name: String,
     is_directory: bool,
@@ -152,6 +153,7 @@ fn get_tree_for_requested_folders(
                 if requested_folders.iter().any(|path| path == root) {
                     match item.kind() {
                         Some(ObjectType::Blob) => blobs.push(FileBlob {
+                            object_id: item.id().to_string(),
                             path: root.to_owned(),
                             name: item.name().unwrap().to_string(),
                             is_directory: false,
@@ -161,6 +163,7 @@ fn get_tree_for_requested_folders(
                             },
                         }),
                         Some(ObjectType::Tree) => blobs.push(FileBlob {
+                            object_id: item.id().to_string(),
                             path: root.to_owned(),
                             name: item.name().unwrap().to_string(),
                             is_directory: true,
@@ -189,10 +192,11 @@ fn get_tree(commit: &Commit, repository: &Repository) -> Option<FileTree> {
     match commit.tree() {
         Ok(tree) => {
             let mut blobs: Vec<FileBlob> = Vec::new();
-            tree.walk(git2::TreeWalkMode::PreOrder, |relative_root, item| {
+            tree.walk(git2::TreeWalkMode::PreOrder, |root, item| {
                 match item.kind() {
                     Some(ObjectType::Blob) => blobs.push(FileBlob {
-                        path: Path::new(relative_root)
+                        object_id: item.id().to_string(),
+                        path: Path::new(root)
                             .join(item.name().unwrap())
                             .to_string_lossy()
                             .into_owned(),
@@ -204,7 +208,8 @@ fn get_tree(commit: &Commit, repository: &Repository) -> Option<FileTree> {
                         },
                     }),
                     Some(ObjectType::Tree) => blobs.push(FileBlob {
-                        path: Path::new(relative_root)
+                        object_id: item.id().to_string(),
+                        path: Path::new(root)
                             .join(item.name().unwrap())
                             .to_string_lossy()
                             .into_owned(),

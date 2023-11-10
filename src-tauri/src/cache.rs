@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Mutex};
+use std::{cmp::min, collections::HashMap, path::PathBuf, sync::Mutex};
 
 use git2::Repository;
 
@@ -72,7 +72,6 @@ impl GitplayState {
                         let commit_hashes_in_order =
                             commits_vec.iter().map(|x| x.get_id()).collect();
                         *self.commits.lock().unwrap() = commits_vec;
-                        println!("{} cached", len);
                         Ok((len, commit_hashes_in_order))
                     }
                     Err(err) => {
@@ -107,7 +106,6 @@ impl GitplayState {
             let summary = commit.get_summary();
             output.insert(summary.0, summary.1);
         }
-        println!("finished");
         Ok(output)
     }
 
@@ -225,7 +223,7 @@ impl GitplayState {
                                         // There is existing entry for this file path
                                         // We check if the file size in the last entry for this path is different from currnt size
                                         if last_size[&size_by_path.path] != size_by_path.size {
-                                            // Sizes differ, so we insert new entry
+                                            // Sizes differ, so we increment the entry
                                             *existing += 1;
                                         }
                                     })
@@ -240,8 +238,13 @@ impl GitplayState {
                 }
                 let mut output: Vec<(String, usize)> =
                     all_files_with_count_of_modifications.into_iter().collect();
+                // Filter the items that have 1 or less modifications
+                output.retain(|x| x.1 > 1);
+                // Sort the items by the number of modifications
                 output.sort_by(|a, b| a.1.cmp(&b.1));
-                Ok(output[..100].to_vec())
+                // Order the items by highest number of modifications first
+                output.reverse();
+                Ok(output[..min(output.len(), 16)].to_vec())
             }
             Err(err) => {
                 *self.last_error_message.lock().unwrap() = Some(err.message().to_string());
