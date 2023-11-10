@@ -23,7 +23,7 @@ const Home: Component = () => {
   };
 
   return (
-    <div class="flex flex-col w-screen h-screen place-content-center place-items-center gap-10">
+    <div class="flex flex-col gap-10">
       <h1 class="text-6xl font-bold">
         git<span class="italic">Play</span>!
       </h1>
