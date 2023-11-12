@@ -14,10 +14,12 @@ import SidebarSectionHeading from "./widgets/SidebarSectionHeading";
 
 interface ISuggestedFileItemPropTypes {
   path: string;
+  isDirectory?: boolean;
 }
 
 const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
   path,
+  isDirectory = false,
 }) => {
   // const [
   //   _,
@@ -47,16 +49,15 @@ const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
     "md",
   ];
 
-  // if (props.isDirectory) {
-  //   thumbIcon = FolderIcon;
-  // } else {
-  //   if (
-  //     codeExtensions.map((x) => props.name.endsWith(`.${x}`)).filter((x) => x)
-  //       .length
-  //   ) {
-  //     thumbIcon = CodeIcon;
-  //   }
-  // }
+  if (isDirectory) {
+    thumbIcon = FolderIcon;
+  } else {
+    if (
+      codeExtensions.map((x) => path.endsWith(`.${x}`)).filter((x) => x).length
+    ) {
+      thumbIcon = CodeIcon;
+    }
+  }
 
   // const handleClick = () => {
   //   if (props.objectId === "RELATIVE_ROOT_PATH") {
@@ -90,70 +91,20 @@ const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
   // });
 
   return (
-    <div class={`flex flex-row w-full py-1 border-b cursor-default`}>
-      <div class="w-60 pl-2">
+    <div
+      class={`flex flex-row py-0.5 border-b cursor-default ${
+        isDirectory ? "border-b border-gray-400" : ""
+      }`}
+    >
+      <div class="w-60 pl-1">
         <img
           src={thumbIcon}
           alt="File type"
-          class="px-2 h-6 opacity-30 w-10 float-left"
+          class="h-6 opacity-20 w-10 float-left"
         />
-        <span class={`w-48 text-sm overflow-hidden`}>{path}</span>
-      </div>
-      <div class="w-12 text-sm text-gray-400">
-        {/* {props.size ? (
-          <>{props.size}</>
-        ) : (
-          <img
-            src={OpenWindowIcon}
-            alt="Open in new window"
-            class="h-3 opacity-30 px-1 mt-1"
-            onClick={handleDirectoryNewWindowClick}
-          />
-        )} */}
-      </div>
-    </div>
-  );
-};
-
-interface ISuggestedFileContainerProps {
-  path: string;
-  items: Array<[string, number]>;
-}
-
-const SuggestedFileContainer: Component<ISuggestedFileContainerProps> = ({
-  path,
-  items,
-}) => {
-  const [_, { getInitialPosition }] = useViewers();
-  let containerRef: HTMLDivElement;
-
-  onMount(() => {
-    const [width, height] = getInitialPosition(280);
-    containerRef.style.left = `${width}px`;
-    containerRef.style.top = `${height}px`;
-  });
-
-  return (
-    <div
-      class="bg-white absolute p-1 border-gray-100 border rounded-md opacity-60"
-      ref={containerRef}
-      // style={{
-      //   "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
-      // }}
-    >
-      <div class="p-1 text-xs text-gray-600 cursor-grab">{path}</div>
-
-      <div class="border border-gray-200">
-        <div class="flex flex-row py-1 border-b bg-gray-100">
-          <div class="w-60 pl-4 text-xs">Folder/File</div>
-          <div class="w-12 text-xs">Size</div>
-        </div>
-
-        <For each={items}>{(x) => <SuggestedFileItem path={x[0]} />}</For>
-      </div>
-
-      <div class="text-gray-600 pt-1 text-xs">
-        {/* Items: {getFileTreeMemo().length} */}
+        <span class={`text-sm whitespace-nowrap overflow-hidden text-gray-400`}>
+          {path}
+        </span>
       </div>
     </div>
   );
@@ -182,12 +133,12 @@ const SuggestedFiles: Component = () => {
   });
 
   return (
-    <div class="border-gray-200 border-r-2 flex flex-col overflow-hidden h-full">
-      <SidebarSectionHeading title="Suggested files" />
+    <div class="border-gray-200 border-l-2 flex flex-col overflow-hidden h-full">
+      <SidebarSectionHeading title="Most modified files" />
       <For each={getFilesOrderedByMostModificationsGroupedByPath()}>
         {(x) => (
           <>
-            <SuggestedFileItem path={x[0]} />
+            <SuggestedFileItem path={x[0]} isDirectory />
             <For each={x[1]}>{(y) => <SuggestedFileItem path={y[0]} />}</For>
           </>
         )}
