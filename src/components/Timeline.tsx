@@ -150,7 +150,7 @@ const Timeline: Component = () => {
       >
         <div class="w-full h-full bg-surface-container-high dark:bg-surface-container-low transition-all"></div>
         <div
-          class="absolute h-1/3 bg-surface-container-lowest dark:bg-surface-container-highest transition-all"
+          class="absolute h-1/3 bg-surface-container-lowest dark:bg-surface-container-highest"
           style={{ width: `calc( ${getRemainingWidth()} - 0.25rem )` , left: `calc( ${getViewedWidth()} + 0.25rem)` }} />
         {focusPosition() !== null && (
           <div
