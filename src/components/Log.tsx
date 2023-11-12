@@ -2,9 +2,10 @@ import { Component, createEffect, createSignal } from "solid-js";
 
 import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
+import SidebarSectionHeading from "./widgets/SidebarSectionHeading";
 
 const Log: Component = () => {
-  const [store, { loadCommits }] = useRepository();
+  const [repository, { loadCommits }] = useRepository();
   const [windowStart, setWindowStart] = createSignal<number>(0);
   const [commitsToRender, setCommitsToRender] = createSignal<number>(50);
   let commitsContainerRef: HTMLDivElement;
@@ -46,28 +47,29 @@ const Log: Component = () => {
 
   return (
     <div class="border-gray-200 border-r-2 flex flex-col overflow-hidden h-full">
-      <h1 class="pl-4 pt-1.5 pb-2 text-xl text-gray-600 shadow-md">
-        Commits
-        {store.commitsCount ? (
-          <span class="pl-2 text-sm">({store.commitsCount})</span>
-        ) : (
-          <></>
-        )}
-      </h1>
-
+      <SidebarSectionHeading
+        title="Commits"
+        metricInBrackets={
+          repository.commitsCount ? repository.commitsCount : undefined
+        }
+      />
       <div
         class="overflow-auto relative"
         onScroll={handleScroll}
         ref={commitsContainerRef}
       >
-        {store.isReady && (
-          <div style={{ height: store.commitsCount * commitItemHeight + "px" }}>
-            {store.listOfCommitHashInOrder
+        {repository.isReady && (
+          <div
+            style={{
+              height: repository.commitsCount * commitItemHeight + "px",
+            }}
+          >
+            {repository.listOfCommitHashInOrder
               .slice(windowStart(), windowStart() + commitsToRender())
               .map((commitHash, index) => (
                 <Commit
                   commitId={commitHash}
-                  commitMessage={store.commits[index]}
+                  commitMessage={repository.commits[commitHash]}
                   index={windowStart() + index}
                 />
               ))}

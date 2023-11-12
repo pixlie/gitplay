@@ -1,11 +1,10 @@
 import type { JSX } from "solid-js";
 import { Component, createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
-import { invoke } from "@tauri-apps/api";
 
-import { ICommitFrame, IFileTree, isIAPICommitFrame } from "../types";
 import { repositoryInner } from "./repository";
 import { changesStore } from "./changes";
+import { viewersStore } from "./viewers";
 
 /**
  * Main data structure for the player that users interact with.
@@ -28,56 +27,12 @@ interface IStore {
   explorerDimensions: [number, number];
 }
 
-interface ICommitDetails extends ICommitFrame {
-  fileTree?: IFileTree;
-}
-
-/**
- * Function to fetch the details for a single commit, generally the file list.
- * The file list is flat, unlike a tree in Rust code. Each item has its relative path.
- *
- * @param commitId string commit hash
- * @returns Promise of commit's detail with the file list
- */
-const getCommit = (commitId: string): Promise<ICommitDetails> =>
-  new Promise((resolve, reject) => {
-    invoke("get_commit_details", {
-      commitId,
-    })
-      .then((response) => {
-        if (isIAPICommitFrame(response)) {
-          const fileTree = !!response.file_structure
-            ? {
-                objectId: response.file_structure.object_id,
-                blobs: response.file_structure.blobs.map((x) => ({
-                  id: x.object_id,
-                  objectId: x.object_id,
-                  relativeRootPath: x.relative_root_path,
-                  name: x.name,
-                  isDirectory: x.is_directory,
-                  size: x.size,
-                })),
-              }
-            : undefined;
-
-          resolve({
-            commitId: response.commit_id,
-            commitMessage: response.commit_message,
-            fileTree,
-          });
-        }
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-
 const getDefaultStore = () => {
   const constDefaultStore: IStore = {
     playSpeed: 4,
     isPlaying: false,
 
-    isCommitSidebarVisible: false,
+    isCommitSidebarVisible: true,
     explorerDimensions: [0, 0],
   };
   return constDefaultStore;
@@ -107,7 +62,13 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
           repository,
           { incrementCurrentCommitIndex, fetchCommitDetails, loadCommits },
         ] = repositoryInner;
-        const [_, { fetchSizes }] = changesStore;
+        const [
+          _,
+          {
+            fetchSizeChangesForOpenFolders,
+            fetchFilesOrderedByMostModifications,
+          },
+        ] = changesStore;
 
         setStore("isPlaying", true);
         let intervalId: ReturnType<typeof setTimeout> | null = null;
@@ -126,8 +87,10 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
             return;
           }
 
+          // We increment the commit index by 1 and fetch the details of this current commit
           incrementCurrentCommitIndex();
           fetchCommitDetails();
+
           const ceilOfCurrentBatch =
             Math.ceil(repository.currentCommitIndex / repository.batchSize) *
             repository.batchSize;
@@ -140,7 +103,10 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
           ) {
             // We are approaching the end of the number of loaded commits, lets fetch new ones
             loadCommits(repository.currentCommitIndex + 25);
-            fetchSizes(repository.currentCommitIndex + 25);
+            fetchSizeChangesForOpenFolders(repository.currentCommitIndex + 25);
+            fetchFilesOrderedByMostModifications(
+              repository.currentCommitIndex + 25
+            );
           }
           intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
         };
@@ -153,7 +119,9 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
       },
 
       setExplorerDimensions(width: number, height: number) {
+        const [_, { setExplorerDimensions }] = viewersStore;
         setStore("explorerDimensions", [width, height]);
+        setExplorerDimensions(width, height);
       },
     },
   ] as const; // `as const` forces tuple type inference

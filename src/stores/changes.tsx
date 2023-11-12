@@ -4,7 +4,7 @@ import { createStore } from "solid-js/store";
 import { invoke } from "@tauri-apps/api";
 
 import { repositoryInner } from "./repository";
-import { APIFileChangesResponses, ISizeByCommitHash } from "../types";
+import { APIFileChangesResponses, IChangeByCommitHash } from "../types";
 
 /**
  * Main data structure where we store file changes.
@@ -19,23 +19,27 @@ import { APIFileChangesResponses, ISizeByCommitHash } from "../types";
  * There are setters or modifiers to update the data structure (defined in `makeRepository`)
  */
 interface IStore {
-  folders: Array<string>;
-  filesByPath: {
-    [key: string]: Array<ISizeByCommitHash>;
+  openFolders: Array<string>;
+  fileSizeChangesByPath: {
+    [key: string]: Array<IChangeByCommitHash>;
   };
   fetchedBatchIndices: Array<number>;
+  filesOrderedByMostModifications: Array<[string, number]>;
 
-  isFetching: boolean;
+  isFetchingSizeChangesForOpenFolders: boolean;
+  isFetchingFilesOrderedByMostModifications: boolean;
 
   lastErrorMessage?: string;
 }
 
 const getDefaultStore = () => {
   const constDefaultStore: IStore = {
-    folders: [],
-    filesByPath: {},
+    openFolders: [],
+    fileSizeChangesByPath: {},
     fetchedBatchIndices: [],
-    isFetching: false,
+    filesOrderedByMostModifications: [],
+    isFetchingSizeChangesForOpenFolders: false,
+    isFetchingFilesOrderedByMostModifications: false,
   };
   return constDefaultStore;
 };
@@ -54,24 +58,24 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
     store,
     {
       setFolderToTrack(path: string) {
-        setStore("folders", (state) => {
+        setStore("openFolders", (state) => {
           return state.findIndex((x) => x === path) === -1
             ? [...state, path]
             : state;
         });
       },
 
-      fetchSizes(fromCommitIndex: number) {
+      fetchSizeChangesForOpenFolders(fromCommitIndex: number) {
         // This function is called when playing the log.
         // We fetch the next X (batch size) commits data of the sizes of files that are visible in the explorers
-        if (store.isFetching) {
+        if (store.isFetchingSizeChangesForOpenFolders) {
           return;
         }
         const [repository] = repositoryInner;
-        setStore("isFetching", true);
+        setStore("isFetchingSizeChangesForOpenFolders", true);
 
         invoke("get_sizes_for_paths", {
-          folders: store.folders,
+          requestedFolders: store.openFolders,
           startIndex:
             Math.floor(fromCommitIndex / repository.batchSize) *
             repository.batchSize, // Take the start of a batch
@@ -80,8 +84,30 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
           const data = response as APIFileChangesResponses;
           setStore({
             ...store,
-            filesByPath: data,
-            isFetching: false,
+            fileSizeChangesByPath: data,
+            isFetchingSizeChangesForOpenFolders: false,
+          });
+        });
+      },
+
+      fetchFilesOrderedByMostModifications(fromCommitIndex: number) {
+        if (store.isFetchingFilesOrderedByMostModifications) {
+          return;
+        }
+        const [repository] = repositoryInner;
+        setStore("isFetchingFilesOrderedByMostModifications", true);
+
+        invoke("get_files_ordered_by_most_modifications", {
+          startIndex:
+            Math.floor(fromCommitIndex / repository.batchSize) *
+            repository.batchSize, // Take the start of a batch
+          count: repository.batchSize,
+        }).then((response) => {
+          const data = response as Array<[string, number]>;
+          setStore({
+            ...store,
+            filesOrderedByMostModifications: data,
+            isFetchingFilesOrderedByMostModifications: false,
           });
         });
       },
