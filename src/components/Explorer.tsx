@@ -10,23 +10,17 @@ const Explorer: Component = () => {
   const [viewers] = useViewers();
 
   return (
-    <div class="px-4 w-fit">
+    <div class="relative w-full h-full">
       {repository.isReady && (
-        <div class="grid grid-flow-col gap-2 mb-3">
-          <div class="pt-2 text-gray-400 text-sm">
-            Commit hash:{" "}
-            <span class="select-text cursor-text inline-block">
-              {
-                repository.listOfCommitHashInOrder[
-                  repository.currentCommitIndex
-                ]
-              }
-            </span>
+          <div class="text-on-surface dark:text-surface text-sm absolute -right-6 -bottom-6 text-5xl font-bold italic opacity-20 select-text">
+            {
+              repository.listOfCommitHashInOrder[
+                repository.currentCommitIndex
+              ].substring(32)
+            }
           </div>
-        </div>
       )}
 
-      <div class="w-full h-full relative">
         <For each={viewers.fileTrees}>
           {(x, index) => <FileTree currentPath={x.currentPath} index={index} />}
         </For>
@@ -34,7 +28,6 @@ const Explorer: Component = () => {
         <For each={Object.keys(viewers.filesByPath)}>
           {(key, index) => <FileViewer filePath={key} index={index} />}
         </For>
-      </div>
     </div>
   );
 };

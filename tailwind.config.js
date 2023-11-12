@@ -13,6 +13,8 @@ module.exports = {
         "on-surface-variant": colors.neutral["600"],
         primary: colors.neutral["900"],
         "on-primary": colors.neutral["50"],
+        secondary: colors.neutral["800"],
+        "on-secondary": colors.neutral["100"],
         "surface-container": colors.neutral["300"],
         "surface-container-low": colors.neutral["100"],
         "surface-container-lowest": colors.neutral["50"],
@@ -20,14 +22,15 @@ module.exports = {
         "surface-container-highest": colors.neutral["950"],
         "outline": colors.neutral["500"],
         "outline-variant": colors.neutral["400"],
+      },
+      minWidth: {
+        half: "50%"
+      },
+      maxWidth: {
+        half: "50%",
+        "3/4": "75%"
       }
-    },
-    minWidth: {
-      half: "50%"
-    },
-    maxWidth: {
-      half: "50%"
-    },
+    }
   },
   plugins: [],
 };

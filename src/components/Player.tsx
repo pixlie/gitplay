@@ -39,13 +39,14 @@ const Player: Component = () => {
           </div>
         </div>
       ) : (
-        <div class="w-screen h-full relative" ref={explorerWindow}>
-          <ViewersProvider>
-            <Explorer />
-          </ViewersProvider>
-
+        <>
+          <div class="w-screen px-5 grow" ref={explorerWindow}>
+            <ViewersProvider>
+              <Explorer />
+            </ViewersProvider>
+          </div>
           <Timeline />
-        </div>
+        </>
       )}
     </>
   );
