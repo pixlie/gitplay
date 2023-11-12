@@ -139,7 +139,7 @@ interface IFileTreeProps {
 const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   const [repository] = useRepository();
   const [player] = usePlayer();
-  const [viewers, { setFileTreeToFocus }] = useViewers();
+  const [viewers, { setFileTreeToFocus, getInitialPosition }] = useViewers();
   const [_, { setFolderToTrack, fetchSizeChangesForOpenFolders }] =
     useChangesStore();
 
@@ -243,8 +243,11 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   });
 
   onMount(() => {
-    containerRef.style.left = `${index() * 30}px`;
-    containerRef.style.top = `${index() * 30}px`;
+    // We assume the width to be 280 px at the moment
+    const [x, y] = getInitialPosition(280);
+    console.log(x, y);
+    containerRef.style.left = `${x}px`;
+    containerRef.style.top = `${y}px`;
 
     setFolderToTrack(currentPath().join(""));
     // TODO: bug - When reopening repository, all open explorers do not fetch sizes

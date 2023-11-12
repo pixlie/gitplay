@@ -1,11 +1,10 @@
 import type { JSX } from "solid-js";
 import { Component, createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
-import { invoke } from "@tauri-apps/api";
 
-import { ICommitFrame, IFileTree, isIAPICommitFrame } from "../types";
 import { repositoryInner } from "./repository";
 import { changesStore } from "./changes";
+import { viewersStore } from "./viewers";
 
 /**
  * Main data structure for the player that users interact with.
@@ -33,7 +32,7 @@ const getDefaultStore = () => {
     playSpeed: 4,
     isPlaying: false,
 
-    isCommitSidebarVisible: false,
+    isCommitSidebarVisible: true,
     explorerDimensions: [0, 0],
   };
   return constDefaultStore;
@@ -120,7 +119,9 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
       },
 
       setExplorerDimensions(width: number, height: number) {
+        const [_, { setExplorerDimensions }] = viewersStore;
         setStore("explorerDimensions", [width, height]);
+        setExplorerDimensions(width, height);
       },
     },
   ] as const; // `as const` forces tuple type inference

@@ -10,6 +10,7 @@ import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/fold
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 import { useChangesStore } from "../stores/changes";
 import { x } from "@tauri-apps/api/path-9b1e7ad5";
+import SidebarSectionHeading from "./widgets/SidebarSectionHeading";
 
 interface ISuggestedFileItemPropTypes {
   path: string;
@@ -89,9 +90,7 @@ const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
   // });
 
   return (
-    <div
-      class={`flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100`}
-    >
+    <div class={`flex flex-row w-full py-1 border-b cursor-default`}>
       <div class="w-60 pl-2">
         <img
           src={thumbIcon}
@@ -125,9 +124,19 @@ const SuggestedFileContainer: Component<ISuggestedFileContainerProps> = ({
   path,
   items,
 }) => {
+  const [_, { getInitialPosition }] = useViewers();
+  let containerRef: HTMLDivElement;
+
+  onMount(() => {
+    const [width, height] = getInitialPosition(280);
+    containerRef.style.left = `${width}px`;
+    containerRef.style.top = `${height}px`;
+  });
+
   return (
     <div
       class="bg-white absolute p-1 border-gray-100 border rounded-md opacity-60"
+      ref={containerRef}
       // style={{
       //   "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       // }}
@@ -173,9 +182,17 @@ const SuggestedFiles: Component = () => {
   });
 
   return (
-    <For each={getFilesOrderedByMostModificationsGroupedByPath()}>
-      {(x, index) => <SuggestedFileContainer path={x[0]} items={x[1]} />}
-    </For>
+    <div class="border-gray-200 border-r-2 flex flex-col overflow-hidden h-full">
+      <SidebarSectionHeading title="Suggested files" />
+      <For each={getFilesOrderedByMostModificationsGroupedByPath()}>
+        {(x) => (
+          <>
+            <SuggestedFileItem path={x[0]} />
+            <For each={x[1]}>{(y) => <SuggestedFileItem path={y[0]} />}</For>
+          </>
+        )}
+      </For>
+    </div>
   );
 };
 

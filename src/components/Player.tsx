@@ -6,6 +6,8 @@ import Log from "./Log";
 import Timeline from "./Timeline";
 import { ViewersProvider } from "../stores/viewers";
 import { usePlayer } from "../stores/player";
+import { ChangesProvider } from "../stores/changes";
+import SuggestedFiles from "./SuggestedFiles";
 
 const Player: Component = () => {
   const [store, { setExplorerDimensions }] = usePlayer();
@@ -28,25 +30,25 @@ const Player: Component = () => {
   return (
     <div class="flex flex-col h-screen w-screen overflow-hidden select-none cursor-default">
       <Controls />
+      <ViewersProvider>
+        <ChangesProvider>
+          <div class="flex h-full w-full overflow-hidden">
+            <div class="flex-1" ref={explorerWindow}>
+              <Explorer />
+              <Timeline />
+            </div>
 
-      {store.isCommitSidebarVisible ? (
-        <div class="flex h-full w-full overflow-hidden">
-          <div class="w-64">
-            <Log />
+            {store.isCommitSidebarVisible ? (
+              <div class="w-64">
+                {/* <Log /> */}
+                <SuggestedFiles />
+              </div>
+            ) : (
+              <></>
+            )}
           </div>
-          <div class="flex-1">
-            <Explorer />
-          </div>
-        </div>
-      ) : (
-        <div class="w-screen h-full relative" ref={explorerWindow}>
-          <ViewersProvider>
-            <Explorer />
-          </ViewersProvider>
-
-          <Timeline />
-        </div>
-      )}
+        </ChangesProvider>
+      </ViewersProvider>
     </div>
   );
 };
