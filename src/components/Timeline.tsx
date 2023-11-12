@@ -101,7 +101,7 @@ const Timeline: Component = () => {
 
     return (
       <>
-        <div class="text-xs">Commit # {commitIndex}: {commitHash}</div>
+        <div class="text-xs font-bold">Commit # <span class="font-mono">{commitIndex}</span>: <span class="font-mono">{commitHash.substring(32)}</span></div>
         <div class="text-sm whitespace-nowrap text-ellipsis overflow-hidden">{commitMessage}</div>
       </>
     );
