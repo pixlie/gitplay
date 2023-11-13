@@ -1,6 +1,6 @@
 # Welcome to gitPlay!
 
-_Please note_: this product is in very early stage of development and should not really usable yet!
+_Please note_: this product is in very early stage of development and is not really usable yet!
 
 `gitPlay` is a desktop application that you can use to understand the evolution of your software (which uses `git` for version control)
 
@@ -29,3 +29,13 @@ If you have a software project version controlled with `git` (either open source
 - Record/play videos describing the history of a repository with anotations that open different commits/files in `gitPlay` for users to easily follow
 - Store text anotations explaning the history to help onboard developers to new projects
 - Integrate with project management software to overlay tickets with correspond to pull/merge requests (enterprise)
+
+## Do you wish you try it out?
+
+- Make sure you have `npm` and `Rust` installed
+- (Fork, if you want) Clone this repository, `git clone git@github.com:brainless/gitplay.git`
+- `cd gitplay`
+- Run `npm install`
+- Run `npm run tauri dev`
+
+Thank you for checking out this product and I hope you will follow our progress.
