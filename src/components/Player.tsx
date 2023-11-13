@@ -32,7 +32,7 @@ const Player: Component = () => {
       <Controls />
       <ViewersProvider>
         <ChangesProvider>
-          <div class="w-screen px-5 grow" ref={explorerWindow}>
+          <div class="w-screen px-5 grow flex gap-5" ref={explorerWindow}>
             <Explorer />
             {store.isCommitSidebarVisible ? (
               <div class="w-64">
