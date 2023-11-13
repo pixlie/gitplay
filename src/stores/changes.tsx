@@ -126,7 +126,7 @@ type TChangesContext = ReturnType<typeof makeChangesStore>;
 export const ChangesContext = createContext<TChangesContext>(changesStore);
 
 export const ChangesProvider: Component<IChangesProviderPropTypes> = (
-  props: IChangesProviderPropTypes
+  props: IChangesProviderPropTypes,
 ) => (
   <ChangesContext.Provider value={changesStore}>
     {props.children}

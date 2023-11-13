@@ -60,7 +60,7 @@ const Timeline: Component = () => {
   const [player] = usePlayer();
 
   const getViewedWidth = createMemo(
-    () => `${(repository.currentCommitIndex / repository.commitsCount) * 100}%`
+    () => `${(repository.currentCommitIndex / repository.commitsCount) * 100}%`,
   );
 
   const getRemainingWidth = createMemo(
@@ -69,7 +69,7 @@ const Timeline: Component = () => {
         ((repository.commitsCount - repository.currentCommitIndex - 1) /
           repository.commitsCount) *
         100
-      }%`
+      }%`,
   );
 
   const getCommitOnHover = createMemo(() => {
@@ -79,7 +79,7 @@ const Timeline: Component = () => {
     }
 
     const commitIndex = Math.floor(
-      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0])
+      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0]),
     );
     let commitMessage: string;
     let commitHash: string = "";
@@ -87,7 +87,7 @@ const Timeline: Component = () => {
     commitHash = repository.listOfCommitHashInOrder[commitIndex];
     if (
       repository.fetchedBatchIndices.includes(
-        Math.floor(commitIndex / repository.batchSize)
+        Math.floor(commitIndex / repository.batchSize),
       )
     ) {
       commitMessage = repository.commits[commitHash];
@@ -116,11 +116,11 @@ const Timeline: Component = () => {
     setFocusPosition(event.clientX);
     const commitIndex = Math.floor(
       repository.commitsCount *
-        ((event.clientX - 16) / player.explorerDimensions[0])
+        ((event.clientX - 16) / player.explorerDimensions[0]),
     );
     if (
       !repository.fetchedBatchIndices.includes(
-        Math.floor(commitIndex / repository.batchSize)
+        Math.floor(commitIndex / repository.batchSize),
       )
     ) {
       loadCommits(commitIndex);
@@ -138,7 +138,7 @@ const Timeline: Component = () => {
     }
 
     const commitIndex = Math.floor(
-      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0])
+      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0]),
     );
     setCurrentCommitIndex(commitIndex);
   };

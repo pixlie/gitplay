@@ -16,13 +16,13 @@ const Player: Component = () => {
   createEffect(() => {
     setExplorerDimensions(
       explorerWindow.clientWidth - 20,
-      explorerWindow.clientHeight - 124
+      explorerWindow.clientHeight - 124,
     );
 
     window.addEventListener("resize", () => {
       setExplorerDimensions(
         explorerWindow.clientWidth - 20,
-        explorerWindow.clientHeight - 124
+        explorerWindow.clientHeight - 124,
       );
     });
   });

@@ -119,7 +119,7 @@ const SuggestedFiles: Component = () => {
       // Get the path of the file
       const path = change[0].split("/").slice(0, -1).join("/");
       const existingIndex = changesGroupedByPath.findIndex(
-        (x) => x[0] === path
+        (x) => x[0] === path,
       );
       if (existingIndex !== -1) {
         // We already have this path, so we just add the file to the array

@@ -18,7 +18,7 @@ const Log: Component = () => {
     }
     timer = setTimeout(() => {
       setWindowStart(
-        Math.floor(commitsContainerRef.scrollTop / commitItemHeight)
+        Math.floor(commitsContainerRef.scrollTop / commitItemHeight),
       );
       // if (
       //   Math.floor(commitsContainerRef.scrollTop / commitItemHeight) >
@@ -32,7 +32,7 @@ const Log: Component = () => {
   createEffect(() => {
     if (commitsContainerRef.offsetHeight) {
       setCommitsToRender(
-        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10
+        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10,
       );
     }
   });
@@ -40,7 +40,7 @@ const Log: Component = () => {
   window.onresize = () => {
     if (commitsContainerRef.offsetHeight) {
       setCommitsToRender(
-        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10
+        Math.floor(commitsContainerRef.offsetHeight / commitItemHeight) + 10,
       );
     }
   };

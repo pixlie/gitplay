@@ -173,7 +173,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
           ...parentTree,
           ...fileTree.filter(
             (x) =>
-              x.path === (!currentPath().length ? "" : currentPath().join(""))
+              x.path === (!currentPath().length ? "" : currentPath().join("")),
           ),
         ]
       : [];

@@ -57,7 +57,7 @@ interface ICommitDetails extends ICommitFrame {
  */
 const getCommit = (
   commitId: string,
-  requestedFolders: Array<string>
+  requestedFolders: Array<string>,
 ): Promise<ICommitDetails> =>
   new Promise((resolve, reject) => {
     invoke("get_commit_details", {
@@ -234,7 +234,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
 
         getCommit(
           store.listOfCommitHashInOrder[commitIndex],
-          changes.openFolders
+          changes.openFolders,
         ).then((response) => {
           setStore("currentFileTree", response.fileTree);
         });
@@ -248,7 +248,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
         const [changes] = useChangesStore();
         getCommit(
           store.listOfCommitHashInOrder[store.currentCommitIndex],
-          changes.openFolders
+          changes.openFolders,
         ).then((response) => {
           setStore("currentFileTree", response.fileTree);
         });
@@ -269,7 +269,7 @@ export const RepositoryContext =
   createContext<TRepositoryContext>(repositoryInner);
 
 export const RepositoryProvider: Component<IRepositoryProviderPropTypes> = (
-  props: IRepositoryProviderPropTypes
+  props: IRepositoryProviderPropTypes,
 ) => (
   <RepositoryContext.Provider value={repositoryInner}>
     {props.children}
