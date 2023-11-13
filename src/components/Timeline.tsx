@@ -63,7 +63,7 @@ const Timeline: Component = () => {
   const [player] = usePlayer();
 
   const getViewedWidth = createMemo(
-    () => `${Math.round(store.currentCommitIndex * 100000 / store.commitsCount) / 1000}%`
+    () => `${Math.round(repository.currentCommitIndex * 100000 / repository.commitsCount) / 1000}%`
   );
 
   const getRemainingWidth = createMemo(
@@ -167,11 +167,11 @@ const Timeline: Component = () => {
         </div>
         <div class="text-sm flex flex-col justify-center">
           <div class="font-mono">{
-            "\xa0".repeat(String(store.commitsCount).length - String(store.currentCommitIndex + 1).length)
+            "\xa0".repeat(String(repository.commitsCount).length - String(repository.currentCommitIndex + 1).length)
             }{
-              store.currentCommitIndex + 1
+              repository.currentCommitIndex + 1
             }<span class="mx-1">/</span>{
-              store.commitsCount
+              repository.commitsCount
             }
           </div>
         </div>
