@@ -83,7 +83,7 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
 
   const pulseOnChange = createMemo(() => {
     const sizesByCommitHash =
-      changes.filesByPath[props.relativeRootPath + props.name];
+      changes.fileSizeChangesByPath[props.path + props.name];
     if (sizesByCommitHash !== undefined) {
       return (
         repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
@@ -165,8 +165,9 @@ interface IFileTreeProps {
 const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   const [repository] = useRepository();
   const [player] = usePlayer();
-  const [viewers, { setFileTreeToFocus }] = useViewers();
-  const [_, { setFolderToTrack, fetchSizes }] = useChangesStore();
+  const [viewers, { setFileTreeToFocus, getInitialPosition }] = useViewers();
+  const [_, { setFolderToTrack, fetchSizeChangesForOpenFolders }] =
+    useChangesStore();
 
   let isPointerDown: boolean = false;
   let posOffset: IPosition = { x: 0, y: 0 };
@@ -183,24 +184,22 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
       : [
           {
             isDirectory: true,
-            id: "RELATIVE_ROOT_PATH",
             objectId: "RELATIVE_ROOT_PATH",
-            relativeRootPath: "",
+            path: "",
             name: "..",
             currentFileTreePath: currentPath,
             indexOfFileTree: index,
           },
         ];
-    const fileTree = repository.currentFileTree;
+    const fileTree = repository.currentFileTree?.blobs;
 
     // We extract only files that belong in the current path (and the parent ".." mentioned above)
     return !!fileTree
       ? [
           ...parentTree,
-          ...fileTree.blobs.filter(
+          ...fileTree.filter(
             (x) =>
-              x.relativeRootPath ===
-              (!currentPath().length ? "" : currentPath().join(""))
+              x.path === (!currentPath().length ? "" : currentPath().join(""))
           ),
         ]
       : [];
@@ -263,12 +262,15 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   });
 
   onMount(() => {
-    containerRef.style.left = `${index() * 30}px`;
-    containerRef.style.top = `${index() * 30}px`;
+    // We assume the width to be 280 px at the moment
+    const [x, y] = getInitialPosition(280);
+    console.log(x, y);
+    containerRef.style.left = `${x}px`;
+    containerRef.style.top = `${y}px`;
 
     setFolderToTrack(currentPath().join(""));
     // TODO: bug - When reopening repository, all open explorers do not fetch sizes
-    fetchSizes(repository.currentCommitIndex);
+    fetchSizeChangesForOpenFolders(repository.currentCommitIndex);
   });
 
   return (
@@ -310,9 +312,8 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         <For each={getFileTreeMemo().filter((x) => x.isDirectory)}>
           {(x) => (
             <FileItem
-              id={x.id}
               objectId={x.objectId}
-              relativeRootPath={x.relativeRootPath}
+              path={x.path}
               name={x.name}
               isDirectory={x.isDirectory}
               currentFileTreePath={currentPath}
@@ -324,9 +325,8 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         <For each={getFileTreeMemo().filter((x) => !x.isDirectory)}>
           {(x) => (
             <FileItem
-              id={x.id}
               objectId={x.objectId}
-              relativeRootPath={x.relativeRootPath}
+              path={x.path}
               name={x.name}
               isDirectory={x.isDirectory}
               size={x.size}

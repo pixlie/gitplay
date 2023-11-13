@@ -23,6 +23,11 @@ interface IStore {
     };
   };
   indexOfFileViewerInFocus?: number;
+
+  // We track the position of each viewer, its top left (x, y) and width and height
+  positionOfViewers: Array<[number, number, number, number?]>;
+  // This is set from within the player store
+  explorerDimensions: [number, number];
 }
 
 const getDefaultStore = (): IStore => {
@@ -38,6 +43,8 @@ const getDefaultStore = (): IStore => {
     filesByPath: {},
     filesByObjectId: {},
     indexOfFileViewerInFocus: 0,
+    positionOfViewers: [],
+    explorerDimensions: [0, 0],
   };
 };
 
@@ -129,15 +136,43 @@ const makeViewers = (defaultStore = getDefaultStore()) => {
           });
         }
       },
+
+      setExplorerDimensions(width: number, height: number) {
+        setStore("explorerDimensions", [width, height]);
+      },
+
+      getInitialPosition(width: number, height?: number): [number, number] {
+        // We know the positions of existing viewers from our store.positionOfViewers Array
+        // We can use this to calculate the position of the new viewer so that we avoid overlapping with existing viewers
+        // We also want to avoid going outside the bounds of the explorer window
+        const [explorerWidth, _] = store.explorerDimensions;
+        if (store.positionOfViewers.length === 0) {
+          // The first window is set of the top left corner
+          setStore("positionOfViewers", [[0, 0, width, height]]);
+          return [0, 0];
+        }
+        const lastViewer =
+          store.positionOfViewers[store.positionOfViewers.length - 1];
+        if (lastViewer[0] + lastViewer[2] + width < explorerWidth - 20) {
+          // We keep 20 px difference from the right edge of the last viewer
+          // We set the new viewer 30 px lower than the last viewer's top edge
+          setStore("positionOfViewers", [
+            ...store.positionOfViewers,
+            [lastViewer[0] + lastViewer[2] + 20, lastViewer[1], width, height],
+          ]);
+          return [lastViewer[0] + lastViewer[2] + 20, lastViewer[1] + 30];
+        }
+        return [explorerWidth - width - 20, lastViewer[1] + 30];
+      },
     },
   ] as const; // `as const` forces tuple type inference
 };
 
-const viewers = makeViewers();
+export const viewersStore = makeViewers();
 
 type TViewersContext = ReturnType<typeof makeViewers>;
 
-export const ViewersContext = createContext<TViewersContext>(viewers);
+export const ViewersContext = createContext<TViewersContext>(viewersStore);
 
 interface IViewersProviderPropTypes {
   children: JSX.Element;
@@ -146,7 +181,7 @@ interface IViewersProviderPropTypes {
 export const ViewersProvider: Component<IViewersProviderPropTypes> = (
   props
 ) => (
-  <ViewersContext.Provider value={viewers}>
+  <ViewersContext.Provider value={viewersStore}>
     {props.children}
   </ViewersContext.Provider>
 );
