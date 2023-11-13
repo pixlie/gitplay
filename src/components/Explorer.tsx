@@ -12,7 +12,7 @@ const Explorer: Component = () => {
   return (
     <div class="relative w-full h-full">
       {repository.isReady && (
-          <div class="text-on-surface dark:text-surface text-sm absolute -right-5 -bottom-6 text-4xl lg:text-6xl font-bold italic opacity-20 select-text font-mono">
+          <div class="text-on-surface dark:text-surface text-sm absolute -right-5 -bottom-6 text-3xl lg:text-6xl font-bold italic opacity-20 select-text font-mono">
             {
               repository.listOfCommitHashInOrder[
                 repository.currentCommitIndex
