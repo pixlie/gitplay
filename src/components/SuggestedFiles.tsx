@@ -95,11 +95,13 @@ const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
     <div
       class={`p-1 pl-4 pr-10 whitespace-pre ${
         isDirectory
-        ? "text-xs bg-surface-container-low/75 dark:bg-surface-container-high/75 font-semibold"
-        : "text-sm pl-8 border-t border-t-surface-container-low/50 dark:border-t-surface-container-high/50"
+          ? "text-xs bg-surface-container-low/75 dark:bg-surface-container-high/75 font-semibold"
+          : "text-sm pl-8 border-t border-t-surface-container-low/50 dark:border-t-surface-container-high/50"
       }`}
     >
-      <Icon name={thumbIcon} class="mr-1.5" />{(isDirectory && "/")}{path}
+      <Icon name={thumbIcon} class="mr-1.5" />
+      {isDirectory && "/"}
+      {path}
     </div>
   );
 };
@@ -127,7 +129,8 @@ const SuggestedFiles: Component = () => {
   });
 
   return (
-    <div class="
+    <div
+      class="
       bg-surface-container
       dark:bg-on-surface-variant
       text-on-surface
@@ -143,14 +146,19 @@ const SuggestedFiles: Component = () => {
       right-0
       -top-5
       -bottom-5
-    ">
+    "
+    >
       <SidebarSectionHeading title="Most modified files" />
       <div class="flex flex-col flex-auto gap-0.5 overflow-y-auto max-h-full">
         <For each={getFilesOrderedByMostModificationsGroupedByPath()}>
           {(x) => (
             <>
               <SuggestedFileItem path={x[0]} isDirectory />
-              <For each={x[1]}>{(y) => <SuggestedFileItem path={y[0].split('/').slice(-1)[0]} />}</For>
+              <For each={x[1]}>
+                {(y) => (
+                  <SuggestedFileItem path={y[0].split("/").slice(-1)[0]} />
+                )}
+              </For>
             </>
           )}
         </For>

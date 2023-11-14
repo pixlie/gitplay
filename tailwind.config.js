@@ -1,6 +1,6 @@
 /** @type {import("tailwindcss").Config} */
 
-const colors = require("tailwindcss/colors")
+const colors = require("tailwindcss/colors");
 
 module.exports = {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -20,17 +20,17 @@ module.exports = {
         "surface-container-lowest": colors.neutral["50"],
         "surface-container-high": colors.neutral["900"],
         "surface-container-highest": colors.neutral["950"],
-        "outline": colors.neutral["500"],
+        outline: colors.neutral["500"],
         "outline-variant": colors.neutral["400"],
       },
       minWidth: {
-        half: "50%"
+        half: "50%",
       },
       maxWidth: {
         half: "50%",
-        "3/4": "75%"
-      }
-    }
+        "3/4": "75%",
+      },
+    },
   },
   plugins: [],
 };

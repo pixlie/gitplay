@@ -35,10 +35,10 @@ const Player: Component = () => {
           <div class="w-screen grow flex gap-5 relative" ref={explorerWindow}>
             <Explorer />
             {store.isCommitSidebarVisible ? (
-                <>
-                  {/* <Log /> */}
-                  <SuggestedFiles />
-                </>
+              <>
+                {/* <Log /> */}
+                <SuggestedFiles />
+              </>
             ) : (
               <></>
             )}
