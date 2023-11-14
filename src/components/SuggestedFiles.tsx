@@ -11,6 +11,7 @@ import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/
 import { useChangesStore } from "../stores/changes";
 import { x } from "@tauri-apps/api/path-9b1e7ad5";
 import SidebarSectionHeading from "./widgets/SidebarSectionHeading";
+import Icon from "./Icon";
 
 interface ISuggestedFileItemPropTypes {
   path: string;
@@ -33,7 +34,7 @@ const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
   // const [repository] = useRepository();
   // const [changes] = useChangesStore();
 
-  let thumbIcon = FileIcon;
+  let thumbIcon: "code" | "r-folder" | "r-file" = "r-file";
   const codeExtensions = [
     "js",
     "ts",
@@ -50,12 +51,12 @@ const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
   ];
 
   if (isDirectory) {
-    thumbIcon = FolderIcon;
+    thumbIcon = "r-folder";
   } else {
     if (
       codeExtensions.map((x) => path.endsWith(`.${x}`)).filter((x) => x).length
     ) {
-      thumbIcon = CodeIcon;
+      thumbIcon = "code";
     }
   }
 
@@ -92,20 +93,13 @@ const SuggestedFileItem: Component<ISuggestedFileItemPropTypes> = ({
 
   return (
     <div
-      class={`flex flex-row py-0.5 border-b cursor-default ${
-        isDirectory ? "border-b border-gray-400" : ""
+      class={`p-1 pl-4 pr-10 whitespace-pre ${
+        isDirectory
+        ? "text-xs bg-surface-container-low/75 dark:bg-surface-container-high/75 font-semibold"
+        : "text-sm pl-8 border-t border-t-surface-container-low/50 dark:border-t-surface-container-high/50"
       }`}
     >
-      <div class="w-60 pl-1">
-        <img
-          src={thumbIcon}
-          alt="File type"
-          class="h-6 opacity-20 w-10 float-left"
-        />
-        <span class={`text-sm whitespace-nowrap overflow-hidden text-gray-400`}>
-          {path}
-        </span>
-      </div>
+      <Icon name={thumbIcon} class="mr-1.5" />{(isDirectory && "/")}{path}
     </div>
   );
 };
@@ -133,16 +127,34 @@ const SuggestedFiles: Component = () => {
   });
 
   return (
-    <div class="border-gray-200 border-l-2 flex flex-col overflow-hidden h-full">
+    <div class="
+      bg-surface-container
+      dark:bg-on-surface-variant
+      text-on-surface
+      dark:text-surface-container
+      border-l-outline-variant
+      dark:border-l-outline
+      border-0
+      border-l
+      flex
+      flex-col
+      min-w-[150px]
+      absolute
+      right-0
+      -top-5
+      -bottom-5
+    ">
       <SidebarSectionHeading title="Most modified files" />
-      <For each={getFilesOrderedByMostModificationsGroupedByPath()}>
-        {(x) => (
-          <>
-            <SuggestedFileItem path={x[0]} isDirectory />
-            <For each={x[1]}>{(y) => <SuggestedFileItem path={y[0]} />}</For>
-          </>
-        )}
-      </For>
+      <div class="flex flex-col flex-auto gap-0.5 overflow-y-auto max-h-full">
+        <For each={getFilesOrderedByMostModificationsGroupedByPath()}>
+          {(x) => (
+            <>
+              <SuggestedFileItem path={x[0]} isDirectory />
+              <For each={x[1]}>{(y) => <SuggestedFileItem path={y[0].split('/').slice(-1)[0]} />}</For>
+            </>
+          )}
+        </For>
+      </div>
     </div>
   );
 };

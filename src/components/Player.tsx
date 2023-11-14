@@ -32,13 +32,13 @@ const Player: Component = () => {
       <Controls />
       <ViewersProvider>
         <ChangesProvider>
-          <div class="w-screen px-5 grow flex gap-5" ref={explorerWindow}>
+          <div class="w-screen grow flex gap-5 relative" ref={explorerWindow}>
             <Explorer />
             {store.isCommitSidebarVisible ? (
-              <div class="w-64">
-                {/* <Log /> */}
-                <SuggestedFiles />
-              </div>
+                <>
+                  {/* <Log /> */}
+                  <SuggestedFiles />
+                </>
             ) : (
               <></>
             )}
