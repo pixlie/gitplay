@@ -13,11 +13,9 @@ import { useRepository } from "../stores/repository";
 import { IPosition } from "../types";
 import { usePlayer } from "../stores/player";
 
-import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
-import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
-import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 import { useChangesStore } from "../stores/changes";
+import Icon from "./Icon";
 
 interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
@@ -37,7 +35,7 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
   const [repository] = useRepository();
   const [changes] = useChangesStore();
 
-  let thumbIcon = FileIcon;
+  let thumbIcon: "r-folder" | "code" | "r-file" = "r-file";
   const codeExtensions = [
     "js",
     "ts",
@@ -54,13 +52,14 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
   ];
 
   if (props.isDirectory) {
-    thumbIcon = FolderIcon;
+    thumbIcon = "r-folder";
   } else {
     if (
+      // TODO: Create a regex and use it to validate
       codeExtensions.map((x) => props.name.endsWith(`.${x}`)).filter((x) => x)
         .length
     ) {
-      thumbIcon = CodeIcon;
+      thumbIcon = "code";
     }
   }
 
@@ -86,48 +85,75 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
     const sizesByCommitHash =
       changes.fileSizeChangesByPath[props.path + props.name];
     if (sizesByCommitHash !== undefined) {
-      if (
+      return (
         repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
         sizesByCommitHash
-      ) {
-        return "bg-blue-200";
-      }
+      ) 
     }
+    return false;
   });
 
   return (
-    <div
-      class={`flex flex-row w-full py-1 border-b cursor-pointer hover:bg-gray-100 ${pulseOnChange()}`}
-    >
-      <div class="w-60 pl-2" onClick={handleClick}>
-        <img
-          src={thumbIcon}
-          alt="File type"
-          class="px-2 h-6 opacity-30 w-10 float-left"
-        />
-        <span
-          class={`w-48 text-sm overflow-hidden ${
-            props.name.startsWith(".") &&
+    <>
+      <div
+        class={`
+          p-1
+          px-2
+          text-sm
+          border-b
+          border-b-surface-container-low/50
+          dark:border-b-surface-container-high/50
+          ${props.name.startsWith(".") &&
             props.objectId !== "RELATIVE_ROOT_PATH" &&
-            "text-gray-400"
-          }`}
-        >
-          {props.name}
+            "opacity-50"
+          }
+          ${pulseOnChange() && 
+            "bg-blue-200 dark:bg-blue-700"
+          }
+          peer/${props.name}-name
+          hover:bg-surface-container-low
+          peer-hover/${props.name}-size:bg-surface-container-low
+          hover:dark:bg-surface-container-high
+          peer-hover/${props.name}-size:dark:bg-surface-container-high
+        `}
+        onClick={handleClick}>
+        <Icon name={thumbIcon} class="mr-1" />{props.name}
+      </div>
+      {/* TODO: Make peer hover work */}
+      <div
+        class={`
+          p-1
+          px-2
+          text-sm
+          text-right
+          border-b
+          border-b-surface-container-low/50
+          dark:border-b-surface-container-high/50
+          ${pulseOnChange() && "bg-blue-200 dark:bg-blue-700"}
+          ${props.name.startsWith(".") &&
+            props.objectId !== "RELATIVE_ROOT_PATH" &&
+            "opacity-50"
+          }
+          peer/${props.name}-size
+          hover:bg-surface-container-low
+          peer-hover/${props.name}-name:bg-surface-container-low
+          hover:dark:bg-surface-container-high
+          peer-hover/${props.name}-name:dark:bg-surface-container-high
+        `}
+      >
+        <span class="opacity-50">
+          {props.size ? props.size : (
+            <a href="javascript:void(0)" onClick={handleDirectoryNewWindowClick}>
+            <Icon
+              name="arrow-up-right-from-square"
+                title="Open in new window"
+                class="text-xs"
+              />
+            </a>
+          )}
         </span>
       </div>
-      <div class="w-12 text-sm text-gray-400">
-        {props.size ? (
-          <>{props.size}</>
-        ) : (
-          <img
-            src={OpenWindowIcon}
-            alt="Open in new window"
-            class="h-3 opacity-30 px-1 mt-1"
-            onClick={handleDirectoryNewWindowClick}
-          />
-        )}
-      </div>
-    </div>
+    </>
   );
 };
 
@@ -227,16 +253,9 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
   const displayCurrentPath = createMemo(() => {
     return (
-      <>
-        {!currentPath().length ? (
-          "Path: /"
-        ) : (
-          <>
-            Path:{" "}
-            {currentPath()
-              .filter((x) => x !== "")
-              .join("")}
-          </>
+      <>/
+        {currentPath().length && (
+            currentPath().filter((x) => x !== "").join("")
         )}
       </>
     );
@@ -256,27 +275,39 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
   return (
     <div
-      class="bg-white absolute p-1 border-gray-100 border rounded-md"
+      class="
+        bg-surface-container
+        dark:bg-on-surface-variant
+        text-on-surface
+        dark:text-surface-container
+        absolute
+        border-on-surface-variant
+        dark:border-surface-container
+        border
+        rounded-lg
+        shadow-md
+        flex
+        flex-col
+      "
       ref={containerRef}
       style={{
         "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       }}
     >
       <div
-        class="p-1 text-xs text-gray-600 cursor-grab"
+        class="p-2 text-sm cursor-grab"
         ref={draggableRef}
         onPointerDown={handlePointerDown}
         onMouseUp={handlePointerUp}
         onPointerMove={handleMouseMove}
       >
+        <Icon name="ellipsis" title="Path" class="mr-2" />
         {displayCurrentPath()}
       </div>
 
-      <div class="border border-gray-200">
-        <div class="flex flex-row py-1 border-b bg-gray-100">
-          <div class="w-60 pl-4 text-xs">Folder/File</div>
-          <div class="w-12 text-xs">Size</div>
-        </div>
+        <div class="grid grid-cols-[auto_min-content] auto-cols-min text-xs gap-0.5">
+          <div class="p-1 px-2 bg-surface-container-low dark:bg-surface-container-high font-bold text-center min-w-[150px]">Name</div>
+          <div class="p-1 px-5 bg-surface-container-low dark:bg-surface-container-high font-bold text-center">Size</div>
 
         <For each={getFileTreeMemo().filter((x) => x.isDirectory)}>
           {(x) => (
@@ -306,7 +337,7 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         </For>
       </div>
 
-      <div class="text-gray-600 pt-1 text-xs">
+      <div class="text-xs p-2 text-right">
         Items: {getFileTreeMemo().length}
       </div>
     </div>

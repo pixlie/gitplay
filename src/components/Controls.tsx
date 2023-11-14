@@ -19,15 +19,15 @@ const RepositoryForm: Component = () => {
   };
 
   return (
-    <>
+    <div class="flex gap-1">
       <input
         type="text"
-        class="flex-1 p-1 px-2 ml-2 text-sm rounded-md border-gray-300 border focus:outline-none bg-yellow-50"
+        class="px-2 text-sm rounded-lg text-secondary dark:text-on-secondary bg-on-secondary dark:bg-secondary border-secondary dark:border-on-secondary border focus:outline-none grow"
         value={store.repositoryPath || ""}
         onInput={handleInput}
       />
-      <Button label="Open" onClick={handleSave} />
-    </>
+      <Button label="Open" title="Open a repository" onClick={handleSave} />
+    </div>
   );
 };
 
@@ -36,7 +36,9 @@ const PlaySpeed: Component = () => {
 
   return (
     <Button
-      label={`Speed: ${store.playSpeed} commit/second`}
+      icon="forward"
+      title="Speed – Number of commits to proceed per second"
+      label={`${store.playSpeed}x`}
       onClick={setPlaySpeed}
     />
   );
@@ -44,10 +46,12 @@ const PlaySpeed: Component = () => {
 
 const Controls: Component = () => {
   return (
-    <div class="py-3 w-full bg-gray-100 border-b-gray-200 border z-10 flex">
+    <div class="p-4 bg-surface-container-low dark:bg-surface-container-high border-b-outline-variant dark:border-b-outline border-b w-screen grid grid-cols-2">
       <RepositoryForm />
-      <Button label="Branch: main" />
-      <PlaySpeed />
+      <div class="flex gap-1 place-content-end">
+        <Button icon="code-branch" label="main" title="Branch" />
+        <PlaySpeed />
+      </div>
     </div>
   );
 };

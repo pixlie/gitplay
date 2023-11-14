@@ -28,28 +28,25 @@ const Player: Component = () => {
   });
 
   return (
-    <div class="flex flex-col h-screen w-screen overflow-hidden select-none cursor-default">
+    <>
       <Controls />
       <ViewersProvider>
         <ChangesProvider>
-          <div class="flex h-full w-full overflow-hidden">
-            <div class="flex-1" ref={explorerWindow}>
-              <Explorer />
-              <Timeline />
-            </div>
-
+          <div class="w-screen grow flex gap-5 relative" ref={explorerWindow}>
+            <Explorer />
             {store.isCommitSidebarVisible ? (
-              <div class="w-64">
-                {/* <Log /> */}
-                <SuggestedFiles />
-              </div>
+                <>
+                  {/* <Log /> */}
+                  <SuggestedFiles />
+                </>
             ) : (
               <></>
             )}
           </div>
+          <Timeline />
         </ChangesProvider>
       </ViewersProvider>
-    </div>
+    </>
   );
 };
 

@@ -100,14 +100,14 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ filePath, index }) => {
 
   return (
     <div
-      class="bg-white absolute border-gray-100 border rounded-md max-w-xs"
+      class="bg-surface-container dark:bg-on-surface-variant absolute border-on-surface-variant dark:border-surface-container border rounded-lg"
       ref={containerRef}
       style={{
         "z-index": viewers.indexOfFileViewerInFocus === index() ? 100 : index(),
       }}
     >
       <div
-        class="pt-1 pb-2 text-sm text-gray-600 cursor-grab bg-gray-200 pl-2"
+        class="pt-1 pb-2 pl-2 text-xs font-bold cursor-grab bg-surface-container-low dark:bg-surface-container-high rounded-t-lg"
         ref={draggableRef}
         onPointerDown={handlePointerDown}
         onMouseUp={handlePointerUp}
@@ -115,11 +115,9 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ filePath, index }) => {
       >
         {filePath}
       </div>
-      <div class="p-2">
-        <pre class="overflow-y-scroll overflow-x-scroll text-xs">
-          <code>{viewers.filesByObjectId[getFileObjectId()].contents}</code>
-        </pre>
-      </div>
+      <pre class="overflow-y-auto overflow-x-auto w-fit h-fit max-w-[25vw] max-h-[50vh] text-xs p-3 rounded-b-lg">
+        <code>{viewers.filesByObjectId[getFileObjectId()].contents}</code>
+      </pre>
     </div>
   );
 };
