@@ -166,12 +166,17 @@ const Timeline: Component = () => {
           <Forward />
         </div>
         <div class="text-sm flex flex-col justify-center">
-          <div class="font-mono">{
+          <div class="font-mono text-right">{
             "\xa0".repeat(String(repository.commitsCount).length - String(repository.currentCommitIndex + 1).length)
             }{
               repository.currentCommitIndex + 1
             }<span class="mx-1">/</span>{
               repository.commitsCount
+            }<br />
+            {
+              repository.listOfCommitHashInOrder[
+                repository.currentCommitIndex
+              ].substring(32)
             }
           </div>
         </div>
