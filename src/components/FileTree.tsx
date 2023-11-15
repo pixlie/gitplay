@@ -82,13 +82,12 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
   };
 
   const pulseOnChange = createMemo(() => {
-    const sizesByCommitHash =
-      changes.fileSizeChangesByPath[props.path + props.name];
-    if (sizesByCommitHash !== undefined) {
-      return (
-        repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
-        sizesByCommitHash
-      ) 
+    if (props.path + props.name in changes.fileSizeChangesByPath) {
+      const sizesByCommitHash =
+        changes.fileSizeChangesByPath[props.path + props.name];
+      const currentCommitHash =
+        repository.listOfCommitHashInOrder[repository.currentCommitIndex];
+      return currentCommitHash in sizesByCommitHash;
     }
     return false;
   });
@@ -103,21 +102,22 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
           border-b
           border-b-surface-container-low/50
           dark:border-b-surface-container-high/50
-          ${props.name.startsWith(".") &&
+          ${
+            props.name.startsWith(".") &&
             props.objectId !== "RELATIVE_ROOT_PATH" &&
             "opacity-50"
           }
-          ${pulseOnChange() && 
-            "bg-blue-200 dark:bg-blue-700"
-          }
+          ${pulseOnChange() && "bg-blue-200 dark:bg-blue-700"}
           peer/${props.name}-name
           hover:bg-surface-container-low
           peer-hover/${props.name}-size:bg-surface-container-low
           hover:dark:bg-surface-container-high
           peer-hover/${props.name}-size:dark:bg-surface-container-high
         `}
-        onClick={handleClick}>
-        <Icon name={thumbIcon} class="mr-1" />{props.name}
+        onClick={handleClick}
+      >
+        <Icon name={thumbIcon} class="mr-1" />
+        {props.name}
       </div>
       {/* TODO: Make peer hover work */}
       <div
@@ -130,7 +130,8 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
           border-b-surface-container-low/50
           dark:border-b-surface-container-high/50
           ${pulseOnChange() && "bg-blue-200 dark:bg-blue-700"}
-          ${props.name.startsWith(".") &&
+          ${
+            props.name.startsWith(".") &&
             props.objectId !== "RELATIVE_ROOT_PATH" &&
             "opacity-50"
           }
@@ -142,10 +143,15 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
         `}
       >
         <span class="opacity-50">
-          {props.size ? props.size : (
-            <a href="javascript:void(0)" onClick={handleDirectoryNewWindowClick}>
-            <Icon
-              name="arrow-up-right-from-square"
+          {props.size ? (
+            props.size
+          ) : (
+            <a
+              href="javascript:void(0)"
+              onClick={handleDirectoryNewWindowClick}
+            >
+              <Icon
+                name="arrow-up-right-from-square"
                 title="Open in new window"
                 class="text-xs"
               />
@@ -253,10 +259,12 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
 
   const displayCurrentPath = createMemo(() => {
     return (
-      <>/
-        {currentPath().length && (
-            currentPath().filter((x) => x !== "").join("")
-        )}
+      <>
+        /
+        {currentPath().length &&
+          currentPath()
+            .filter((x) => x !== "")
+            .join("")}
       </>
     );
   });
@@ -264,7 +272,6 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   onMount(() => {
     // We assume the width to be 280 px at the moment
     const [x, y] = getInitialPosition(280);
-    console.log(x, y);
     containerRef.style.left = `${x}px`;
     containerRef.style.top = `${y}px`;
 
@@ -305,9 +312,13 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
         {displayCurrentPath()}
       </div>
 
-        <div class="grid grid-cols-[auto_min-content] auto-cols-min text-xs gap-0.5">
-          <div class="p-1 px-2 bg-surface-container-low dark:bg-surface-container-high font-bold text-center min-w-[150px]">Name</div>
-          <div class="p-1 px-5 bg-surface-container-low dark:bg-surface-container-high font-bold text-center">Size</div>
+      <div class="grid grid-cols-[auto_min-content] auto-cols-min text-xs gap-0.5">
+        <div class="p-1 px-2 bg-surface-container-low dark:bg-surface-container-high font-bold text-center min-w-[150px]">
+          Name
+        </div>
+        <div class="p-1 px-5 bg-surface-container-low dark:bg-surface-container-high font-bold text-center">
+          Size
+        </div>
 
         <For each={getFileTreeMemo().filter((x) => x.isDirectory)}>
           {(x) => (
