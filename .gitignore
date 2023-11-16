@@ -1,3 +1,4 @@
 node_modules
 dist
 src/assets/fontawesome-free-6.4.0-desktop-original/
+.DS_Store

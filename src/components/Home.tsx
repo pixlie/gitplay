@@ -4,6 +4,8 @@ import { open } from "@tauri-apps/api/dialog";
 import { useRepository } from "../stores/repository";
 import Button from "./Button";
 
+import Logo from "../assets/logo.svg"
+
 const Home: Component = () => {
   const [_, { setRepositoryPath, openRepository }] = useRepository();
 
@@ -24,10 +26,9 @@ const Home: Component = () => {
 
   return (
     <>
-      <h1 class="text-6xl font-bold">
-        git<span class="italic">Play</span>!
-      </h1>
-      <Button label="Open a repository" onClick={handleOpenRequest}></Button>
+      <Logo class="min-w-[10vh] max-w-half" />
+      <div class="mb-[5vh] text-4xl text-center">Learning through git history!</div>
+      <Button label="Open a repository" onClick={handleOpenRequest} textSize="2xl"></Button>
     </>
   );
 };
