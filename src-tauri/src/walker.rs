@@ -23,9 +23,9 @@ struct FileTree {
     blobs: Vec<FileBlob>,
 }
 
-pub struct FileSizeByPath {
+pub struct FileHashByPath {
     pub path: String,
-    pub size: usize,
+    pub hash: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -102,7 +102,7 @@ pub fn get_commit_details(
     repository: &Repository,
     git_spec: &str,
     with_file_tree: bool,
-    requested_folders: Option<Vec<String>>,
+    requested_folders: Option<Vec<&str>>,
 ) -> Result<CommitFrame, String> {
     // Get details for a single commit as our own data structure, CommitFrame
     match repository.revparse_single(git_spec) {
@@ -143,14 +143,14 @@ pub fn get_commit_details(
 fn get_tree_for_requested_folders(
     commit: &Commit,
     repository: &Repository,
-    requested_folders: Vec<String>,
+    requested_folders: Vec<&str>,
 ) -> Option<FileTree> {
     // Get the file tree for the requested folders at the given commit
     match commit.tree() {
         Ok(tree) => {
             let mut blobs: Vec<FileBlob> = Vec::new();
             tree.walk(git2::TreeWalkMode::PreOrder, |root, item| {
-                if requested_folders.iter().any(|path| path == root) {
+                if requested_folders.iter().any(|path| *path == root) {
                     match item.kind() {
                         Some(ObjectType::Blob) => blobs.push(FileBlob {
                             object_id: item.id().to_string(),
@@ -263,17 +263,17 @@ fn get_commit_parents(commit: &Commit) -> Vec<String> {
     parents
 }
 
-pub fn get_sizes_for_paths_in_commit(
+pub fn get_file_hashes_for_paths_in_commit(
     repository: &Repository,
     git_spec: &str,
-    requested_folders: Option<Vec<String>>,
-) -> Result<Vec<FileSizeByPath>, String> {
+    requested_folders: Option<Vec<&str>>,
+) -> Result<Vec<FileHashByPath>, String> {
     match repository.revparse_single(git_spec) {
         Ok(tree_obj) => match tree_obj.kind() {
             Some(ObjectType::Commit) => match tree_obj.as_commit() {
                 Some(commit) => match commit.tree() {
                     Ok(tree) => {
-                        let mut output: Vec<FileSizeByPath> = Vec::new();
+                        let mut output: Vec<FileHashByPath> = Vec::new();
                         tree.walk(git2::TreeWalkMode::PreOrder, |root, item| {
                             match item.kind() {
                                 Some(ObjectType::Blob) => {
@@ -281,23 +281,16 @@ pub fn get_sizes_for_paths_in_commit(
                                         Some(folders) => {
                                             // We check if this file item is under one of the folders we have been requested
                                             if folders.iter().any(|path| *path == root) {
-                                                match item.to_object(repository) {
-                                                    Ok(object) => output.push(FileSizeByPath {
-                                                        path: root.to_owned()
-                                                            + item.name().unwrap(),
-                                                        size: object.as_blob().unwrap().size(),
-                                                    }),
-                                                    Err(_) => {}
-                                                }
+                                                output.push(FileHashByPath {
+                                                    path: root.to_owned() + item.name().unwrap(),
+                                                    hash: item.id().to_string(),
+                                                })
                                             }
                                         }
-                                        None => match item.to_object(repository) {
-                                            Ok(object) => output.push(FileSizeByPath {
-                                                path: root.to_owned() + item.name().unwrap(),
-                                                size: object.as_blob().unwrap().size(),
-                                            }),
-                                            Err(_) => {}
-                                        },
+                                        None => output.push(FileHashByPath {
+                                            path: root.to_owned() + item.name().unwrap(),
+                                            hash: item.id().to_string(),
+                                        }),
                                     }
                                 }
                                 _ => {}

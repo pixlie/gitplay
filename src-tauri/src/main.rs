@@ -33,18 +33,21 @@ async fn get_commits(
     repo: State<'_, GitplayState>,
 ) -> Result<HashMap<String, String>, String> {
     let output = repo.get_commits(start_index, count);
-    println!("get_commits {:?} {:?} completed", start_index, count);
+    println!("get_commits {:?}, from {:?}, completed", start_index, count);
     output
 }
 
 #[tauri::command]
 async fn get_commit_details(
     commit_id: &str,
-    requested_folders: Vec<String>,
+    requested_folders: Vec<&str>,
     repo: State<'_, GitplayState>,
 ) -> Result<CommitFrame, String> {
-    let output = repo.get_commit_details(commit_id, requested_folders);
-    println!("get_commit_details, {:?} completed", commit_id);
+    let output = repo.get_commit_details(commit_id, requested_folders.clone());
+    println!(
+        "get_commit_details, {:?}, {:?} completed",
+        commit_id, requested_folders
+    );
     output
 }
 
@@ -60,14 +63,14 @@ async fn read_file_contents(
 
 #[tauri::command]
 async fn get_sizes_for_paths(
-    requested_folders: Vec<String>,
+    requested_folders: Vec<&str>,
     start_index: Option<usize>,
     count: Option<usize>,
     repo: State<'_, GitplayState>,
-) -> Result<HashMap<String, HashMap<String, usize>>, String> {
+) -> Result<HashMap<String, HashMap<String, bool>>, String> {
     let output = repo.get_sizes_for_paths(requested_folders.clone(), start_index, count);
     println!(
-        "get_sizes_for_paths, {:?}, {:?}, {:?} completed",
+        "get_sizes_for_paths, {:?}, from {:?}, {:?} completed",
         requested_folders, start_index, count
     );
     output
@@ -76,13 +79,12 @@ async fn get_sizes_for_paths(
 #[tauri::command]
 async fn get_files_ordered_by_most_modifications(
     start_index: Option<usize>,
-    count: Option<usize>,
     repo: State<'_, GitplayState>,
 ) -> Result<Vec<(String, usize)>, String> {
-    let output = repo.get_files_ordered_by_most_modifications(start_index, count);
+    let output = repo.get_files_ordered_by_most_modifications(start_index);
     println!(
-        "get_files_ordered_by_most_modifications, {:?}, {:?} completed",
-        start_index, count
+        "get_files_ordered_by_most_modifications, from {:?}, completed",
+        start_index
     );
     output
 }
