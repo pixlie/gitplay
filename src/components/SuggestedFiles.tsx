@@ -1,15 +1,9 @@
-import { Accessor, Component, For, createMemo, onMount } from "solid-js";
+import { Component, For, createMemo, onMount } from "solid-js";
 
-import { IFileBlob } from "../types";
-import { useViewers } from "../stores/viewers";
-import { useRepository } from "../stores/repository";
+// import { useViewers } from "../stores/viewers";
+// import { useRepository } from "../stores/repository";
 
-import FileIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/file.svg";
-import CodeIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/code.svg";
-import FolderIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/folder-closed.svg";
-import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 import { useChangesStore } from "../stores/changes";
-import { x } from "@tauri-apps/api/path-9b1e7ad5";
 import SidebarSectionHeading from "./widgets/SidebarSectionHeading";
 import Icon from "./Icon";
 
@@ -115,7 +109,7 @@ const SuggestedFiles: Component = () => {
       // Get the path of the file
       const path = change[0].split("/").slice(0, -1).join("/");
       const existingIndex = changesGroupedByPath.findIndex(
-        (x) => x[0] === path,
+        (x) => x[0] === path
       );
       if (existingIndex !== -1) {
         // We already have this path, so we just add the file to the array

@@ -53,7 +53,7 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
     {
       setPlaySpeed() {
         setStore("playSpeed", (playSpeed) =>
-          playSpeed < 32 ? playSpeed * 2 : 1,
+          playSpeed < 32 ? playSpeed * 2 : 1
         );
       },
 
@@ -105,7 +105,7 @@ const makePlayer = (defaultStore = getDefaultStore()) => {
             loadCommits(repository.currentCommitIndex + 25);
             fetchSizeChangesForOpenFolders(repository.currentCommitIndex + 25);
             fetchFilesOrderedByMostModifications(
-              repository.currentCommitIndex + 25,
+              repository.currentCommitIndex + 25
             );
           }
           intervalId = setTimeout(nextCommit, 1000 / store.playSpeed);
@@ -138,7 +138,7 @@ type TPlayerContext = ReturnType<typeof makePlayer>;
 export const PlayerContext = createContext<TPlayerContext>(player);
 
 export const PlayerProvider: Component<IPlayerProviderPropTypes> = (
-  props: IPlayerProviderPropTypes,
+  props: IPlayerProviderPropTypes
 ) => (
   <PlayerContext.Provider value={player}>
     {props.children}

@@ -36,7 +36,7 @@ const FileViewer: Component<IFileViewerPropTypes> = ({ filePath, index }) => {
   let draggableRef: HTMLDivElement;
 
   const getFileObjectId = createMemo(
-    () => viewers.filesByPath[filePath].objectId,
+    () => viewers.filesByPath[filePath].objectId
   );
 
   createEffect(() => {

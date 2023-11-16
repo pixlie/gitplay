@@ -80,7 +80,7 @@ const makeViewers = (defaultStore = getDefaultStore()) => {
         store.fileTrees[index].setCurrentPath(
           store.fileTrees[index]
             .currentPath()
-            .slice(0, store.fileTrees[index].currentPath().length - 1),
+            .slice(0, store.fileTrees[index].currentPath().length - 1)
         );
       },
 
@@ -179,7 +179,7 @@ interface IViewersProviderPropTypes {
 }
 
 export const ViewersProvider: Component<IViewersProviderPropTypes> = (
-  props,
+  props
 ) => (
   <ViewersContext.Provider value={viewersStore}>
     {props.children}

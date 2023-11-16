@@ -1,9 +1,5 @@
-import { Component, createEffect, createMemo, createSignal } from "solid-js";
+import { Component, createMemo, createSignal } from "solid-js";
 
-import PlayIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/play.svg";
-import PauseIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/pause.svg";
-import ForwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/forward-step.svg";
-import BackwardStepIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/backward-step.svg";
 import { useRepository } from "../stores/repository";
 import { usePlayer } from "../stores/player";
 import Button from "./Button";
@@ -66,9 +62,9 @@ const Timeline: Component = () => {
     () =>
       `${
         Math.round(
-          (repository.currentCommitIndex * 100000) / repository.commitsCount,
+          (repository.currentCommitIndex * 100000) / repository.commitsCount
         ) / 1000
-      }%`,
+      }%`
   );
 
   const getRemainingWidth = createMemo(
@@ -77,7 +73,7 @@ const Timeline: Component = () => {
         ((repository.commitsCount - repository.currentCommitIndex - 1) /
           repository.commitsCount) *
         100
-      }%`,
+      }%`
   );
 
   const getCommitOnHover = createMemo(() => {
@@ -87,7 +83,7 @@ const Timeline: Component = () => {
     }
 
     const commitIndex = Math.floor(
-      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0]),
+      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0])
     );
     let commitMessage: string;
     let commitHash: string = "";
@@ -95,7 +91,7 @@ const Timeline: Component = () => {
     commitHash = repository.listOfCommitHashInOrder[commitIndex];
     if (
       repository.fetchedBatchIndices.includes(
-        Math.floor(commitIndex / repository.batchSize),
+        Math.floor(commitIndex / repository.batchSize)
       )
     ) {
       commitMessage = repository.commits[commitHash];
@@ -120,11 +116,11 @@ const Timeline: Component = () => {
     setFocusPosition(event.clientX);
     const commitIndex = Math.floor(
       repository.commitsCount *
-        ((event.clientX - 16) / player.explorerDimensions[0]),
+        ((event.clientX - 16) / player.explorerDimensions[0])
     );
     if (
       !repository.fetchedBatchIndices.includes(
-        Math.floor(commitIndex / repository.batchSize),
+        Math.floor(commitIndex / repository.batchSize)
       )
     ) {
       loadCommits(commitIndex);
@@ -142,7 +138,7 @@ const Timeline: Component = () => {
     }
 
     const commitIndex = Math.floor(
-      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0]),
+      repository.commitsCount * ((pos - 16) / player.explorerDimensions[0])
     );
     setCurrentCommitIndex(commitIndex);
   };
@@ -181,7 +177,7 @@ const Timeline: Component = () => {
           <div class="font-mono text-right">
             {"\xa0".repeat(
               String(repository.commitsCount).length -
-                String(repository.currentCommitIndex + 1).length,
+                String(repository.currentCommitIndex + 1).length
             )}
             {repository.currentCommitIndex + 1}
             <span class="mx-1">/</span>

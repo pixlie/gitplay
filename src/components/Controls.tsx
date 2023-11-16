@@ -9,7 +9,7 @@ const RepositoryForm: Component = () => {
   const [store, { setRepositoryPath, openRepository }] = useRepository();
 
   const handleInput: JSX.EventHandler<HTMLInputElement, InputEvent> = (
-    event,
+    event
   ) => {
     setRepositoryPath(event.currentTarget.value);
   };

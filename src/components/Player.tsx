@@ -2,7 +2,6 @@ import { Component, createEffect } from "solid-js";
 
 import Controls from "./Controls";
 import Explorer from "./Explorer";
-import Log from "./Log";
 import Timeline from "./Timeline";
 import { ViewersProvider } from "../stores/viewers";
 import { usePlayer } from "../stores/player";
@@ -16,13 +15,13 @@ const Player: Component = () => {
   createEffect(() => {
     setExplorerDimensions(
       explorerWindow.clientWidth - 20,
-      explorerWindow.clientHeight - 124,
+      explorerWindow.clientHeight - 124
     );
 
     window.addEventListener("resize", () => {
       setExplorerDimensions(
         explorerWindow.clientWidth - 20,
-        explorerWindow.clientHeight - 124,
+        explorerWindow.clientHeight - 124
       );
     });
   });
