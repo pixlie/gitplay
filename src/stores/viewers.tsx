@@ -55,14 +55,23 @@ const makeViewers = (defaultStore = getDefaultStore()) => {
     store,
     {
       setPathInNewFileTree(path: string) {
-        const [path_, setPath_] = createSignal<Array<string>>([path]);
-        setStore("fileTrees", (ft) => [
-          ...ft,
-          {
-            currentPath: path_,
-            setCurrentPath: setPath_,
-          },
-        ]);
+        if (path !== "" && path.slice(-1) !== "/") {
+          path = path + "/";
+        }
+        if (
+          store.fileTrees.findIndex(
+            (ft) => ft.currentPath().join("/") === path
+          ) === -1
+        ) {
+          const [path_, setPath_] = createSignal<Array<string>>([path]);
+          setStore("fileTrees", (ft) => [
+            ...ft,
+            {
+              currentPath: path_,
+              setCurrentPath: setPath_,
+            },
+          ]);
+        }
       },
 
       setPathInFileTree(index: number, path: string) {

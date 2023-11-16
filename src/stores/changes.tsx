@@ -21,7 +21,7 @@ import { APIFileChangesResponses, IChangeByCommitHash } from "../types";
 interface IStore {
   openFolders: Array<string>;
   fileSizeChangesByPath: {
-    [key: string]: Array<IChangeByCommitHash>;
+    [key: string]: IChangeByCommitHash;
   };
   fetchedBatchIndices: Array<number>;
   filesOrderedByMostModifications: Array<[string, number]>;
@@ -101,7 +101,6 @@ const makeChangesStore = (defaultStore = getDefaultStore()) => {
           startIndex:
             Math.floor(fromCommitIndex / repository.batchSize) *
             repository.batchSize, // Take the start of a batch
-          count: repository.batchSize,
         }).then((response) => {
           const data = response as Array<[string, number]>;
           setStore({

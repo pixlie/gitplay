@@ -2,7 +2,7 @@ use std::{cmp::min, collections::HashMap, path::PathBuf, sync::Mutex};
 
 use git2::Repository;
 
-use crate::walker::{self, get_sizes_for_paths_in_commit, CommitFrame};
+use crate::walker::{self, get_file_hashes_for_paths_in_commit, CommitFrame};
 
 pub struct GitplayState {
     repository_path: Mutex<Option<PathBuf>>,
@@ -112,7 +112,7 @@ impl GitplayState {
     pub fn get_commit_details(
         &self,
         commit_id: &str,
-        requested_folders: Vec<String>,
+        requested_folders: Vec<&str>,
     ) -> Result<CommitFrame, String> {
         if self.repository_path.lock().unwrap().is_none() {
             *self.last_error_message.lock().unwrap() = Some("Repositoy path is not set".to_owned());
@@ -133,10 +133,10 @@ impl GitplayState {
 
     pub fn get_sizes_for_paths(
         &self,
-        requested_folders: Vec<String>,
+        requested_folders: Vec<&str>,
         start_index: Option<usize>,
         count: Option<usize>,
-    ) -> Result<HashMap<String, HashMap<String, usize>>, String> {
+    ) -> Result<HashMap<String, HashMap<String, bool>>, String> {
         if self.repository_path.lock().unwrap().is_none() {
             *self.last_error_message.lock().unwrap() =
                 Some("Repository path is not set".to_owned());
@@ -145,15 +145,15 @@ impl GitplayState {
 
         let end_index = (start_index.unwrap_or(0) + count.unwrap_or(100))
             .min(self.commits_count.lock().unwrap().unwrap());
-        let mut output: HashMap<String, HashMap<String, usize>> = HashMap::new();
-        let mut last_size: HashMap<String, usize> = HashMap::new();
+        let mut output: HashMap<String, HashMap<String, bool>> = HashMap::new();
+        let mut last_hash: HashMap<String, String> = HashMap::new();
 
         let commits = self.commits.lock().unwrap();
         let path = self.repository_path.lock().unwrap().clone().unwrap();
         match Repository::open(path) {
             Ok(repository) => {
                 for commit in commits[start_index.unwrap_or(0)..end_index].iter() {
-                    match get_sizes_for_paths_in_commit(
+                    match get_file_hashes_for_paths_in_commit(
                         &repository,
                         commit.get_id().as_str(),
                         Some(requested_folders.clone()),
@@ -165,16 +165,13 @@ impl GitplayState {
                                     .and_modify(|existing| {
                                         // There is existing entry for this file path
                                         // We check if the file size in the last entry for this path is different from currnt size
-                                        if last_size[&size_by_path.path] != size_by_path.size {
+                                        if last_hash[&size_by_path.path] != size_by_path.hash {
                                             // Sizes differ, so we insert new entry
-                                            existing.insert(commit.get_id(), size_by_path.size);
+                                            existing.insert(commit.get_id(), true);
                                         }
                                     })
-                                    .or_insert(HashMap::from([(
-                                        commit.get_id(),
-                                        size_by_path.size,
-                                    )]));
-                                last_size.insert(size_by_path.path, size_by_path.size);
+                                    .or_insert(HashMap::from([(commit.get_id(), true)]));
+                                last_hash.insert(size_by_path.path, size_by_path.hash);
                             }
                         }
                         Err(err) => {
@@ -194,7 +191,6 @@ impl GitplayState {
     pub fn get_files_ordered_by_most_modifications(
         &self,
         start_index: Option<usize>,
-        count: Option<usize>,
     ) -> Result<Vec<(String, usize)>, String> {
         // Get a list of files that have the most number of modifications in the given range of commits
         if self.repository_path.lock().unwrap().is_none() {
@@ -203,18 +199,24 @@ impl GitplayState {
             return Err("Repository path is not set".to_owned());
         }
 
-        let end_index = (start_index.unwrap_or(0) + count.unwrap_or(100))
-            .min(self.commits_count.lock().unwrap().unwrap());
+        let end_index =
+            (start_index.unwrap_or(0) + 40).min(self.commits_count.lock().unwrap().unwrap());
         let mut all_files_with_count_of_modifications: HashMap<String, usize> = HashMap::new();
-        let mut last_size: HashMap<String, usize> = HashMap::new();
+        let mut last_hash: HashMap<String, String> = HashMap::new();
 
         let commits = self.commits.lock().unwrap();
         let path = self.repository_path.lock().unwrap().clone().unwrap();
         match Repository::open(path) {
             Ok(repository) => {
-                for commit in commits[start_index.unwrap_or(0)..end_index].iter() {
-                    match get_sizes_for_paths_in_commit(&repository, commit.get_id().as_str(), None)
-                    {
+                for commit in commits[start_index.unwrap_or(0)..end_index]
+                    .iter()
+                    .step_by(4)
+                {
+                    match get_file_hashes_for_paths_in_commit(
+                        &repository,
+                        commit.get_id().as_str(),
+                        None,
+                    ) {
                         Ok(vec_of_size_by_path) => {
                             for size_by_path in vec_of_size_by_path {
                                 all_files_with_count_of_modifications
@@ -222,13 +224,13 @@ impl GitplayState {
                                     .and_modify(|existing| {
                                         // There is existing entry for this file path
                                         // We check if the file size in the last entry for this path is different from currnt size
-                                        if last_size[&size_by_path.path] != size_by_path.size {
+                                        if last_hash[&size_by_path.path] != size_by_path.hash {
                                             // Sizes differ, so we increment the entry
                                             *existing += 1;
                                         }
                                     })
                                     .or_insert(1);
-                                last_size.insert(size_by_path.path, size_by_path.size);
+                                last_hash.insert(size_by_path.path, size_by_path.hash);
                             }
                         }
                         Err(err) => {

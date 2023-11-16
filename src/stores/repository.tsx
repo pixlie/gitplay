@@ -55,7 +55,7 @@ interface ICommitDetails extends ICommitFrame {
  * @param commitId string commit hash
  * @returns Promise of commit's detail with the file list
  */
-const getCommit = (
+const getCommitDetails = (
   commitId: string,
   requestedFolders: Array<string>
 ): Promise<ICommitDetails> =>
@@ -149,6 +149,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           })
           .then((response) => {
             const data = response as APIGetCommitsResponse;
+            const [changes] = useChangesStore();
             setStore((state) => ({
               ...state,
               commits: data,
@@ -159,7 +160,10 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
               currentCommitIndex: 0,
             }));
 
-            return getCommit(store.listOfCommitHashInOrder[0], [""]);
+            return getCommitDetails(
+              store.listOfCommitHashInOrder[0],
+              changes.openFolders
+            );
           })
           .then((response) => {
             const [
@@ -220,7 +224,13 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
       },
 
       setCurrentCommitIndex(commitIndex: number) {
-        const [changes] = useChangesStore();
+        const [
+          changes,
+          {
+            fetchSizeChangesForOpenFolders,
+            fetchFilesOrderedByMostModifications,
+          },
+        ] = useChangesStore();
         if (!store.isReady) {
           return;
         }
@@ -232,11 +242,14 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
           isPlaying: false,
         }));
 
-        getCommit(
+        getCommitDetails(
           store.listOfCommitHashInOrder[commitIndex],
           changes.openFolders
         ).then((response) => {
           setStore("currentFileTree", response.fileTree);
+
+          fetchSizeChangesForOpenFolders(commitIndex);
+          fetchFilesOrderedByMostModifications(commitIndex);
         });
       },
 
@@ -246,7 +259,7 @@ const makeRepository = (defaultStore = getDefaultStore()) => {
 
       fetchCommitDetails() {
         const [changes] = useChangesStore();
-        getCommit(
+        getCommitDetails(
           store.listOfCommitHashInOrder[store.currentCommitIndex],
           changes.openFolders
         ).then((response) => {

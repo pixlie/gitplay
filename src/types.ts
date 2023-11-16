@@ -3,7 +3,7 @@ import { Accessor, Setter } from "solid-js";
 type APIGetCommitsResponse = { [key: string]: string };
 type APIPrepareCacheResponse = [number, Array<string>];
 type APIFileChangesResponses = {
-  [key: string]: Array<IChangeByCommitHash>;
+  [key: string]: IChangeByCommitHash;
 };
 
 interface IAPIFileBlob {

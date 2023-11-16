@@ -5,7 +5,13 @@ interface IButtonPropTypes {
   label?: string;
   textSize?: string;
   svgIcon?: string;
-  icon?: "play" | "pause" | "forward-step" | "backward-step" | "code-branch" | "forward";
+  icon?:
+    | "play"
+    | "pause"
+    | "forward-step"
+    | "backward-step"
+    | "code-branch"
+    | "forward";
   title?: string;
   colorScheme?: string;
   hasBorder?: boolean;
@@ -14,13 +20,12 @@ interface IButtonPropTypes {
 }
 
 const Button: Component<IButtonPropTypes> = (props: IButtonPropTypes) => {
-  let classes = (
-    `font-bold text-${props.textSize || "sm"} transition-all duration-300 opacity-90 hover:opacity-100 flex place-items-center gap-1`)
-  ;
+  let classes = `font-bold text-${
+    props.textSize || "sm"
+  } transition-all duration-300 opacity-90 hover:opacity-100 flex place-items-center gap-1`;
   let iconClasses = "";
 
-  if (props.icon)
-    classes = `${classes} icon-${props.icon}`
+  if (props.icon) classes = `${classes} icon-${props.icon}`;
 
   if (props.hasBorder || props.hasBorder === undefined)
     classes = `${classes} border rounded-lg hover:shadow-md`;
@@ -37,7 +42,9 @@ const Button: Component<IButtonPropTypes> = (props: IButtonPropTypes) => {
 
   return (
     <button class={classes} onClick={props.onClick} title={props.title}>
-      {props.icon && <Icon name={props.icon} title={props.title} textSize={props.textSize} />}
+      {props.icon && (
+        <Icon name={props.icon} title={props.title} textSize={props.textSize} />
+      )}
       {props.label && <>{props.label}</>}
     </button>
   );
