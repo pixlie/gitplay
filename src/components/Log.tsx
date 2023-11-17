@@ -2,7 +2,7 @@ import { Component, createEffect, createSignal } from "solid-js";
 
 import { useRepository } from "../stores/repository";
 import Commit from "./Commit";
-import SidebarSectionHeading from "./widgets/SidebarSectionHeading";
+import SidebarSectionHeading from "./SidebarSectionHeading";
 
 const Log: Component = () => {
   const [repository, { loadCommits }] = useRepository();

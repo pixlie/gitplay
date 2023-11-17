@@ -4,12 +4,13 @@ import { useRepository } from "../stores/repository";
 import { useViewers } from "../stores/viewers";
 import FileTree from "./FileTree";
 import FileViewer from "./FileViewer";
+import { usePlayer } from "../stores/player";
+import FileChangesTreemapChart from "../widgets/FileChangesTreemapChart";
 
 const Explorer: Component = () => {
   const [repository] = useRepository();
   const [viewers] = useViewers();
-
-  console.log(viewers.fileTrees.map((x) => x.currentPath().join("/")));
+  const [player] = usePlayer();
 
   return (
     <div class="relative w-screen pl-5">
@@ -21,13 +22,20 @@ const Explorer: Component = () => {
         </div>
       )}
 
-      <For each={viewers.fileTrees}>
-        {(x, index) => <FileTree currentPath={x.currentPath} index={index} />}
-      </For>
+      {player.explorerType === "file-tree-viewer" && (
+        <>
+          <For each={viewers.fileTrees}>
+            {(x, index) => (
+              <FileTree currentPath={x.currentPath} index={index} />
+            )}
+          </For>
 
-      <For each={Object.keys(viewers.filesByPath)}>
-        {(key, index) => <FileViewer filePath={key} index={index} />}
-      </For>
+          <For each={Object.keys(viewers.filesByPath)}>
+            {(key, index) => <FileViewer filePath={key} index={index} />}
+          </For>
+        </>
+      )}
+      {player.explorerType === "treemap-chart" && <FileChangesTreemapChart />}
     </div>
   );
 };

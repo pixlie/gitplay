@@ -1,11 +1,9 @@
-import { Accessor, Component, For, createMemo, onMount } from "solid-js";
+import { Component, For, createMemo } from "solid-js";
 
-import { IFileBlob } from "../types";
 import { useViewers } from "../stores/viewers";
-import { useRepository } from "../stores/repository";
 
 import { useChangesStore } from "../stores/changes";
-import SidebarSectionHeading from "./widgets/SidebarSectionHeading";
+import SidebarSectionHeading from "./SidebarSectionHeading";
 import Icon from "./Icon";
 
 interface ISuggestedFileItemPropTypes {

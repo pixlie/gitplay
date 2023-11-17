@@ -1,11 +1,11 @@
-import { Component, createEffect, createSignal } from "solid-js";
+import { Component } from "solid-js";
 import type { JSX } from "solid-js";
 
 import Button from "./Button";
 import { useRepository } from "../stores/repository";
 import { usePlayer } from "../stores/player";
 
-import Logo from "../assets/logo.svg"
+import Logo from "../assets/logo.svg";
 
 const RepositoryForm: Component = () => {
   const [store, { setRepositoryPath, openRepository }] = useRepository();

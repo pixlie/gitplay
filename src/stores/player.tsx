@@ -23,6 +23,7 @@ interface IStore {
 
   // UI layout state
   isCommitSidebarVisible: boolean;
+  explorerType: "treemap-chart" | "file-tree-viewer";
 
   explorerDimensions: [number, number];
 }
@@ -33,6 +34,7 @@ const getDefaultStore = () => {
     isPlaying: false,
 
     isCommitSidebarVisible: true,
+    explorerType: "treemap-chart",
     explorerDimensions: [0, 0],
   };
   return constDefaultStore;
