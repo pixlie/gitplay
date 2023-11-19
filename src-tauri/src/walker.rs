@@ -120,11 +120,15 @@ pub fn get_commit_details(
                         match requested_folders {
                             // If we have been requested to search within certain folders then we do that
                             Some(requested_folders) => {
-                                frame.file_structure = get_tree_for_requested_folders(
-                                    commit,
-                                    repository,
-                                    requested_folders,
-                                )
+                                if requested_folders.len() != 0 {
+                                    frame.file_structure = get_tree_for_requested_folders(
+                                        commit,
+                                        repository,
+                                        requested_folders,
+                                    )
+                                } else {
+                                    frame.file_structure = get_tree(commit, repository)
+                                }
                             }
                             // Else we get the whole file tree
                             None => frame.file_structure = get_tree(commit, repository),
