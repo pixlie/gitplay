@@ -8,13 +8,13 @@ import { useRepository } from "../stores/repository";
 interface INestedFileTree {
   name: string;
   path: string;
+  id: string;
   value?: number;
   children?: INestedFileTree[];
 }
 
 const FileChangesTreemapChart: Component = () => {
   const [repository] = useRepository();
-  let canvasRef: HTMLCanvasElement;
 
   echarts.use([TreemapChart, TooltipComponent, TreemapChart, CanvasRenderer]);
   let chart: echarts.ECharts;
@@ -39,6 +39,7 @@ const FileChangesTreemapChart: Component = () => {
                 ...baseObject,
                 name: blob.name,
                 path: blob.path,
+                id: blob.path,
                 value: blob.size,
               },
             ];
@@ -62,28 +63,32 @@ const FileChangesTreemapChart: Component = () => {
       },
       initialValue
     );
-    // !!chart &&
-    //   chart.setOption({
-    //     series: [
-    //       {
-    //         data: nestedFileTree,
-    //       },
-    //     ],
-    //   });
-    // drawTreemapChart(nestedFileTree!);
+    !!chart &&
+    chart.setOption({
+      series: [
+        {
+          data: nestedFileTree,
+        },
+      ],
+    }, initialValue.length ? {
+      replaceMerge: ['series']
+    } : {});
   });
 
   const getLevelOption = () => {
     return [
       {
         itemStyle: {
-          borderWidth: 0,
-          gapWidth: 5,
+          borderWidth: 2,
+          borderColor: 'black',
+          gapWidth: 6,
         },
       },
       {
         itemStyle: {
-          gapWidth: 1,
+          gapWidth: 5,
+          borderWidth: 1,
+          borderColor: 'gray',
         },
       },
       {
@@ -91,6 +96,8 @@ const FileChangesTreemapChart: Component = () => {
         itemStyle: {
           gapWidth: 1,
           borderColorSaturation: 0.6,
+          borderWidth: 1,
+          borderColor: 'gray',
         },
       },
     ];
@@ -98,14 +105,27 @@ const FileChangesTreemapChart: Component = () => {
 
   onMount(() => {
     // This will initiate the chart on mount
-    // initiateChart();
+    initiateChart();
   });
 
   const initiateChart = () => {
-    chart = echarts.init(document.getElementById("treemap-chart-container")!);
+    chart = echarts.init(
+      document.getElementById("treemap-chart-container")!,
+      {
+        useDirtyRect: true,
+        renderer: 'canvas',
+        width: '100%',
+        height: 'auto',
+      }
+    );
     chart.setOption({
-      animation: false,
+      animation: true,
+      animationDuration: 1,
+      animationDurationUpdate: 1,
+      animationThreshold: 1,
+      animationDelayUpdate: 0,
       tooltip: {
+        show: true,
         formatter: function (info: any) {
           var value = info.value;
           var treePathInfo = info.treePathInfo;
@@ -126,21 +146,55 @@ const FileChangesTreemapChart: Component = () => {
       series: [
         {
           type: "treemap",
+          roam: false,
+          width: "100%",
+          top: "top",
+          bottom: "30px",
           visibleMin: 300,
+          colorMappingBy: "value",
+          childrenVisibleMin: 400,
+          leafDepth: 3,
+          breadcrumb: {
+            itemStyle: {
+              borderJoin: "miter",
+              textStyle: {
+                fontWeight: "bold",
+                fontSize: 16
+              }
+            },
+          },
           label: {
             show: true,
             formatter: "{b}",
           },
+          upperLabel: {
+            show: true,
+            fontWeight: "bold",
+            shadowBlur: 0,
+            fontSize: 18,
+          },
           itemStyle: {
-            borderColor: "#fff",
+            borderColor: "gray",
+            gapWidth: 5,
+            borderWidth: 1
           },
           levels: getLevelOption(),
         },
       ],
+      stateAnimation: {
+        duration: 1
+      },
+      textStyle: {
+        fontSize: 14
+      },
+      replaceMerge: ['series'],
     });
+    window.addEventListener('resize', chart.resize, {});
   };
 
-  return <canvas id="treemap-chart-container" ref={canvasRef}></canvas>;
+  return (
+    <div class="w-1/3 md:w-2/3 lg:w-3/4 h-full pb-10" id="treemap-chart-container" />
+  );
 };
 
 export default FileChangesTreemapChart;
