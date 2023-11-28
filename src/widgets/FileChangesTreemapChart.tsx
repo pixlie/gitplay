@@ -127,20 +127,14 @@ const FileChangesTreemapChart: Component = () => {
       tooltip: {
         show: true,
         formatter: function (info: any) {
-          var value = info.value;
-          var treePathInfo = info.treePathInfo;
-          var treePath = [];
-
-          for (var i = 1; i < treePathInfo.length; i++) {
-            treePath.push(treePathInfo[i].name);
-          }
-
-          return [
-            '<div class="tooltip-title">' +
-              echarts.format.encodeHTML(treePath.join("/")) +
-              "</div>",
-            "Disk Usage: " + echarts.format.addCommas(value) + " KB",
-          ].join("");
+          return (
+            <>
+              <div class="tooltip-title">
+                {echarts.format.encodeHTML(info.treePathInfo.map(x => x.name).join("/"))}
+              </div>
+              <small>Disk Usage: {echarts.format.addCommas(info.value)} KB</small>
+            </>
+          );
         },
       },
       series: [
