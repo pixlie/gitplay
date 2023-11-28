@@ -16,6 +16,7 @@ import { usePlayer } from "../stores/player";
 import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 import { useChangesStore } from "../stores/changes";
 import Icon from "./Icon";
+import getSmartSize from "../utils/misc";
 
 interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
@@ -92,6 +93,8 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
     return false;
   });
 
+  const smartSize = props.size ? getSmartSize(props.size) : null;
+
   return (
     <>
       <div
@@ -144,7 +147,7 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
       >
         <span class="opacity-50">
           {props.size ? (
-            props.size
+            `${smartSize?.size}${smartSize?.label}`
           ) : (
             <a
               href="javascript:void(0)"
