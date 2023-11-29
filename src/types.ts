@@ -64,6 +64,11 @@ interface IChangeByCommitHash {
   [key: string]: number;
 }
 
+interface ISmartSize {
+  size: number;
+  label: string;
+}
+
 export type {
   APIGetCommitsResponse,
   APIPrepareCacheResponse,
@@ -77,6 +82,7 @@ export type {
   IFileListItem,
   IPosition,
   IChangeByCommitHash,
+  ISmartSize,
 };
 
 export { isIAPICommitFrame };
