@@ -8,6 +8,7 @@ import { usePlayer } from "../stores/player";
 
 import { useChangesStore } from "../stores/changes";
 import Icon from "./Icon";
+import getSmartSize from "../utils/misc";
 
 interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
@@ -84,6 +85,8 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
     return false;
   });
 
+  const smartSize = props.size ? getSmartSize(props.size) : null;
+
   return (
     <>
       <div
@@ -136,7 +139,7 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
       >
         <span class="opacity-50">
           {props.size ? (
-            props.size
+            `${smartSize?.size}${smartSize?.label}`
           ) : (
             <a
               href="javascript:void(0)"
