@@ -4,6 +4,7 @@ import { TooltipComponent } from "echarts/components";
 import { TreemapChart } from "echarts/charts";
 import { CanvasRenderer } from "echarts/renderers";
 import { useRepository } from "../stores/repository";
+import getSmartSize from "../utils/misc";
 
 interface INestedFileTree {
   name: string;
@@ -127,12 +128,13 @@ const FileChangesTreemapChart: Component = () => {
       tooltip: {
         show: true,
         formatter: function (info: any) {
+          const smartSize = getSmartSize(Number(info.value));
           return (
             <>
               <div class="tooltip-title">
                 {echarts.format.encodeHTML(info.treePathInfo.map(x => x.name).join("/"))}
               </div>
-              <small>Disk Usage: {echarts.format.addCommas(info.value)} KB</small>
+              <small>Disk Usage: {echarts.format.addCommas(smartSize.size)} {smartSize.label}</small>
             </>
           );
         },
