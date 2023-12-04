@@ -1,10 +1,4 @@
-import {
-  Accessor,
-  Component,
-  For,
-  createMemo,
-  onMount,
-} from "solid-js";
+import { Accessor, Component, For, createMemo, onMount } from "solid-js";
 
 import { IFileBlob } from "../types";
 import { useViewers } from "../stores/viewers";
