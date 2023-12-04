@@ -14,6 +14,7 @@ import { usePlayer } from "../stores/player";
 
 import { useChangesStore } from "../stores/changes";
 import Icon from "./Icon";
+import getSmartSize from "../utils/misc";
 
 interface IFileBlobItemPropTypes extends IFileBlob {
   currentFileTreePath: Accessor<Array<string>>;
@@ -80,16 +81,17 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
   };
 
   const pulseOnChange = createMemo(() => {
-    const sizesByCommitHash =
-      changes.fileSizeChangesByPath[props.path + props.name];
-    if (sizesByCommitHash !== undefined) {
-      return (
-        repository.listOfCommitHashInOrder[repository.currentCommitIndex] in
-        sizesByCommitHash
-      );
+    if (props.path + props.name in changes.fileSizeChangesByPath) {
+      const sizesByCommitHash =
+        changes.fileSizeChangesByPath[props.path + props.name];
+      const currentCommitHash =
+        repository.listOfCommitHashInOrder[repository.currentCommitIndex];
+      return currentCommitHash in sizesByCommitHash;
     }
     return false;
   });
+
+  const smartSize = props.size ? getSmartSize(props.size) : null;
 
   return (
     <>
@@ -143,7 +145,7 @@ const FileItem: Component<IFileBlobItemPropTypes> = (props) => {
       >
         <span class="opacity-50">
           {props.size ? (
-            props.size
+            `${smartSize?.size}${smartSize?.label}`
           ) : (
             <a
               href="javascript:void(0)"
@@ -271,7 +273,6 @@ const FileTree: Component<IFileTreeProps> = ({ currentPath, index }) => {
   onMount(() => {
     // We assume the width to be 280 px at the moment
     const [x, y] = getInitialPosition(280);
-    console.log(x, y);
     containerRef.style.left = `${x}px`;
     containerRef.style.top = `${y}px`;
 

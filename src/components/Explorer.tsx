@@ -9,10 +9,12 @@ const Explorer: Component = () => {
   const [repository] = useRepository();
   const [viewers] = useViewers();
 
+  console.log(viewers.fileTrees.map((x) => x.currentPath().join("/")));
+
   return (
-    <div class="relative w-screen pl-5 relative">
+    <div class="relative w-screen pl-5">
       {repository.isReady && (
-        <div class="text-on-surface dark:text-surface text-sm absolute w-screen text-center -bottom-6 text-3xl lg:text-6xl font-bold italic opacity-20 select-text font-mono">
+        <div class="text-on-surface dark:text-surface absolute w-screen text-center -bottom-6 text-3xl lg:text-6xl font-bold italic opacity-20 select-text font-mono">
           {repository.listOfCommitHashInOrder[
             repository.currentCommitIndex
           ].substring(32)}
