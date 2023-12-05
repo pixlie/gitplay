@@ -3,17 +3,18 @@
 @tailwind utilities;
 
 svg g.logo-git path {
-    fill: theme(colors.surface-container-highest) !important;
+  fill: theme(colors.surface-container-highest) !important;
 }
-svg path.logo-play, svg g.logo-play-strokes path {
-    fill: theme(colors.on-surface-variant) !important;
+svg path.logo-play,
+svg g.logo-play-strokes path {
+  fill: theme(colors.on-surface-variant) !important;
 }
-@media (prefers-color-scheme: dark)
-{
-    svg g.logo-git path {
-        fill: theme(colors.surface-container-lowest) !important;
-    }
-    svg path.logo-play, svg g.logo-play-strokes path {
-        fill: theme(colors.surface) !important;
-    }
+@media (prefers-color-scheme: dark) {
+  svg g.logo-git path {
+    fill: theme(colors.surface-container-lowest) !important;
+  }
+  svg path.logo-play,
+  svg g.logo-play-strokes path {
+    fill: theme(colors.surface) !important;
+  }
 }

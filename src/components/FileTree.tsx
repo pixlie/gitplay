@@ -1,11 +1,4 @@
-import {
-  Accessor,
-  Component,
-  For,
-  createEffect,
-  createMemo,
-  onMount,
-} from "solid-js";
+import { Accessor, Component, For, createMemo, onMount } from "solid-js";
 
 import { IFileBlob } from "../types";
 import { useViewers } from "../stores/viewers";
@@ -13,7 +6,6 @@ import { useRepository } from "../stores/repository";
 import { IPosition } from "../types";
 import { usePlayer } from "../stores/player";
 
-import OpenWindowIcon from "../assets/fontawesome-free-6.4.0-desktop/svgs/solid/arrow-up-right-from-square.svg";
 import { useChangesStore } from "../stores/changes";
 import Icon from "./Icon";
 import getSmartSize from "../utils/misc";

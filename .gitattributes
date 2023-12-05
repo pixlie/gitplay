@@ -1,0 +1,28 @@
+* text=auto eol=lf
+
+*.gif binary
+*.ico binary
+*.jpg binary
+*.mo binary
+*.png binary
+*.webp binary
+*.icns binary
+
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.prettierignore text eol=lf
+.prettierrc text eol=lf
+LICENSE text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.rs text eol=lf
+*.svg text eol=lf
+*.toml text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.txt text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf

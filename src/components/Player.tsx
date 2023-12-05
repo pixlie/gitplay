@@ -2,7 +2,6 @@ import { Component, createEffect } from "solid-js";
 
 import Controls from "./Controls";
 import Explorer from "./Explorer";
-import Log from "./Log";
 import Timeline from "./Timeline";
 import { ViewersProvider } from "../stores/viewers";
 import { usePlayer } from "../stores/player";
@@ -35,10 +34,10 @@ const Player: Component = () => {
           <div class="w-screen grow flex gap-5 relative" ref={explorerWindow}>
             <Explorer />
             {store.isCommitSidebarVisible ? (
-                <>
-                  {/* <Log /> */}
-                  <SuggestedFiles />
-                </>
+              <>
+                {/* <Log /> */}
+                <SuggestedFiles />
+              </>
             ) : (
               <></>
             )}
